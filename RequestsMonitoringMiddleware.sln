@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Api", "Test.Api\Test.A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RequestMonitoringLibrary", "RequestMonitoringLibrary\RequestMonitoringLibrary.csproj", "{FAC160DE-7CC2-4062-A115-920394858394}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RequestMonitoringTests", "RequestMonitoringTests\RequestMonitoringTests.csproj", "{42F4883A-9CF4-4662-8B60-9F3BAAE01A34}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{FAC160DE-7CC2-4062-A115-920394858394}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FAC160DE-7CC2-4062-A115-920394858394}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FAC160DE-7CC2-4062-A115-920394858394}.Release|Any CPU.Build.0 = Release|Any CPU
+		{42F4883A-9CF4-4662-8B60-9F3BAAE01A34}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42F4883A-9CF4-4662-8B60-9F3BAAE01A34}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42F4883A-9CF4-4662-8B60-9F3BAAE01A34}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42F4883A-9CF4-4662-8B60-9F3BAAE01A34}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
