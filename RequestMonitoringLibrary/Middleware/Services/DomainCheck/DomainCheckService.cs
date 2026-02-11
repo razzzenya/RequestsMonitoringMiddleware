@@ -1,26 +1,33 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
-using RequestMonitoringLibrary.Context;
+﻿using Microsoft.AspNetCore.Http;
 using RequestMonitoringLibrary.Enitites.Domain;
+using RequestMonitoringLibrary.Middleware.Services.FileReader;
 
 namespace RequestMonitoringLibrary.Middleware.Services.DomainCheck;
 
-public class DomainCheckService(DomainListsContext dbcontext) : IDomainCheckService
+public class DomainCheckService(IFileReaderService fileReaderService) : IDomainCheckService
 {
+    private readonly string pathToWhitelistFile = "Lists/whitelist.json"; // временно
+    private readonly string pathToGreylistFile = "Lists/greylist.json";
     public async Task<DomainStatusType> IsDomainAllowedAsync(HttpContext context)
     {
-        var domain = context.Request.Host.Host; 
-        var allowedDomains = await dbcontext.Domains.Where(s => s.DomainStatusTypeId == 1).Select(h => h.Host).ToListAsync();
-        var greylistedDomains = await dbcontext.Domains.Where(s => s.DomainStatusTypeId == 2).Select(h => h.Host).ToListAsync();
+        var domain = ExtractDomainFromContext(context);
+        var allowedDomains = await fileReaderService.ReadFileLinesAsync(pathToWhitelistFile);
+        var greylistedDomains = await fileReaderService.ReadFileLinesAsync(pathToGreylistFile);
+        if (!allowedDomains.Contains(domain))
+        {
+            return DomainStatusType.Forbidden;
+        }
         if (greylistedDomains.Contains(domain))
         {
-            return await dbcontext.DomainStatusTypes.FirstAsync(s => s.Id == 2);
+            return DomainStatusType.Greylisted;
         }
-        if (allowedDomains.Contains(domain))
-        {
-            return await dbcontext.DomainStatusTypes.FirstAsync(s => s.Id == 1);
-        }
-        return await dbcontext.DomainStatusTypes.FirstAsync(s => s.Id == 3);
+        return DomainStatusType.Allowed;
+    }
+
+    private static string ExtractDomainFromContext(HttpContext context)
+    {
+        var host = context.Request.Host.Host;
+        return host;
     }
 
     //private static Request ConstructRequestFromContext(HttpContext context)

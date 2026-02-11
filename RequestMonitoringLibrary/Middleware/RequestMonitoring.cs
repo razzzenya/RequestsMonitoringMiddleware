@@ -1,28 +1,28 @@
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
+using RequestMonitoringLibrary.Enitites.Domain;
 using RequestMonitoringLibrary.Middleware.Services.DomainCheck;
 
 namespace RequestMonitoringLibrary.Middleware;
 
-public class RequestMonitoring(RequestDelegate next)
-{
-    public async Task InvokeAsync(HttpContext context, IDomainCheckService domainCheckService)
+public class RequestMonitoring(RequestDelegate next, IDomainCheckService domainCheckService)
+{   
+    public async Task InvokeAsync(HttpContext context)
     {
         var domainStatus = await domainCheckService.IsDomainAllowedAsync(context);
-
-        switch (domainStatus.Id)
+        switch (domainStatus)
         {
-            case 1:
+            case DomainStatusType.Allowed:
                 await next(context);
                 return;
 
-            case 2:
-                context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
-                await context.Response.WriteAsync("This domain is greylisted.");
+            case DomainStatusType.Forbidden:
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsync("This domain is forbidden.");
                 return;
 
-            case 3:
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsync("This domain is forbidden.");
+            case DomainStatusType.Greylisted:
+                context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
+                await context.Response.WriteAsync("This domain is greylisted.");
                 return;
         }
     }

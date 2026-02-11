@@ -1,16 +1,14 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace RequestMonitoringLibrary.Enitites.Domain;
 
-public class DomainStatusType
+public enum DomainStatusType
 {
-    [Key]
-    [Column("id")]
-    public required int Id { get; set; }
-
-    [Column("name")]
-    [MaxLength(30)]
-    [Required]
-    public required string Name { get; set; }
+    Allowed, // 200
+    Forbidden, // 403
+    Greylisted // 402
 }

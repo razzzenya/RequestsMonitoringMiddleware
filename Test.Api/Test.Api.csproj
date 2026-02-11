@@ -4,8 +4,17 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-	<PreserveCompilationContext>true</PreserveCompilationContext>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="Lists\greylist.json" />
+    <Content Remove="Lists\whitelist.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Lists\greylist.json" />
+    <None Include="Lists\whitelist.json" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
