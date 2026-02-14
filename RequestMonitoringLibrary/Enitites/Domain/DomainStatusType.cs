@@ -1,14 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace RequestMonitoringLibrary.Enitites.Domain;
+namespace RequestMonitoring.Library.Enitites.Domain;
 
-public enum DomainStatusType
+/// <summary>
+/// Тип статуса домена
+/// </summary>
+public class DomainStatusType
 {
-    Allowed, // 200
-    Forbidden, // 403
-    Greylisted // 402
+    /// <summary>
+    /// Идентификатор типа статуса
+    /// </summary>
+    [Key]
+    [Column("id")]
+    public required int Id { get; set; }
+
+    /// <summary>
+    /// Название статуса
+    /// </summary>
+    [Column("name")]
+    [MaxLength(30)]
+    [Required]
+    public required string Name { get; set; }
 }

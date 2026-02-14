@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="RequestMonitoringLibrary/RequestMonitoring.Library.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="RequestMonitoringTests/RequestMonitoring.Tests.csproj" />
+    <Project Path="Test.Api/RequestMonitoring.Test.Api.csproj" />
+  </Folder>
+</Solution>
