@@ -1,12 +1,18 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using RequestMonitoringLibrary.Context;
-using RequestMonitoringLibrary.Enitites.Domain;
+using RequestMonitoring.Library.Context;
+using RequestMonitoring.Library.Enitites.Domain;
 
-namespace RequestMonitoringLibrary.Middleware.Services.DomainCheck;
+namespace RequestMonitoring.Library.Middleware.Services.DomainCheck;
 
+/// <summary>
+/// Сервис проверки статуса домена
+/// </summary>
 public class DomainCheckService(DomainListsContext dbcontext) : IDomainCheckService
 {
+    /// <summary>
+    /// Проверяет статус домена из контекста запроса
+    /// </summary>
     public async Task<DomainStatusType> IsDomainAllowedAsync(HttpContext context)
     {
         var domain = context.Request.Host.Host; 
@@ -22,20 +28,4 @@ public class DomainCheckService(DomainListsContext dbcontext) : IDomainCheckServ
         }
         return await dbcontext.DomainStatusTypes.FirstAsync(s => s.Id == 3);
     }
-
-    //private static Request ConstructRequestFromContext(HttpContext context)
-    //{
-    //    var userIp = context.Connection.RemoteIpAddress.ToString();
-    //    var requestTime = DateTime.UtcNow;
-    //    var parameters = HttpUtility.ParseQueryString(context.Request.QueryString.Value) ?? [];
-
-    //    var request = new Request
-    //    {
-    //        UserIp = userIp,
-    //        RequestTime = requestTime,
-    //        Parameters = parameters.ToDictionary()
-    //    };
-
-    //    return request;
-    //}
 }

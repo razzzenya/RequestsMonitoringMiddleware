@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using RequestMonitoringLibrary.Context;
-using RequestMonitoringLibrary.Enitites.Domain;
+using RequestMonitoring.Library.Context;
+using RequestMonitoring.Library.Enitites.Domain;
 using System.Net;
 
 namespace RequestMonitoringTests;

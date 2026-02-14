@@ -1,20 +1,21 @@
-﻿using Microsoft.AspNetCore.Http;
-using RequestMonitoringLibrary.Enitites.Domain;
-using RequestMonitoringLibrary.Middleware.Services.OpenSearchLog;
+using Microsoft.AspNetCore.Http;
+using RequestMonitoring.Library.Middleware.Services.OpenSearchLog;
+using RequestMonitoring.Library.Enitites.Domain;
 using System.Diagnostics;
 
-namespace RequestMonitoringLibrary.Middleware;
+namespace RequestMonitoring.Library.Middleware;
 
-public class RequestLogging(RequestDelegate next, IOpenSearchLogService openSearchLogService)
+/// <summary>
+/// Middleware для логирования HTTP-запросов в OpenSearch
+/// </summary>
+public class RequestLoggingMiddleware(RequestDelegate next)
 {
-    //public async Task InvokeAsync(HttpContext context)
-    //{
-    //    Console.WriteLine($"Request: {context.Request.Method} {context.Request.Path}");
-    //    await next(context);
-    //    Console.WriteLine($"Response: {context.Response.StatusCode}");
-    //}
-
-    public async Task InvokeAsync(HttpContext context)
+    /// <summary>
+    /// Обрабатывает HTTP-запрос, логирует информацию о запросе и передает управление следующему middleware
+    /// </summary>
+    /// <param name="context">Контекст HTTP-запроса</param>
+    /// <param name="openSearchLogService">Сервис логирования в OpenSearch</param>
+    public async Task InvokeAsync(HttpContext context, IOpenSearchLogService openSearchLogService)
     {
         var sw = Stopwatch.StartNew();
 

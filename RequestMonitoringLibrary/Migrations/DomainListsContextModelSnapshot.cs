@@ -2,11 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using RequestMonitoringLibrary.Context;
+using RequestMonitoring.Library.Context;
 
 #nullable disable
 
-namespace RequestMonitoringLibrary.Migrations
+namespace RequestMonitoring.Library.Migrations
 {
     [DbContext(typeof(DomainListsContext))]
     partial class DomainListsContextModelSnapshot : ModelSnapshot
@@ -14,7 +14,7 @@ namespace RequestMonitoringLibrary.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.10");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.3");
 
             modelBuilder.Entity("RequestMonitoringLibrary.Enitites.Domain.Domain", b =>
                 {
@@ -36,7 +36,7 @@ namespace RequestMonitoringLibrary.Migrations
 
                     b.HasIndex("DomainStatusTypeId");
 
-                    b.ToTable("Domains");
+                    b.ToTable("domain");
                 });
 
             modelBuilder.Entity("RequestMonitoringLibrary.Enitites.Domain.DomainStatusType", b =>

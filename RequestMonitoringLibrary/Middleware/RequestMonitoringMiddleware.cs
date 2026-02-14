@@ -1,10 +1,18 @@
 using Microsoft.AspNetCore.Http;
-using RequestMonitoringLibrary.Middleware.Services.DomainCheck;
+using RequestMonitoring.Library.Middleware.Services.DomainCheck;
 
-namespace RequestMonitoringLibrary.Middleware;
+namespace RequestMonitoring.Library.Middleware;
 
-public class RequestMonitoring(RequestDelegate next)
+/// <summary>
+/// Middleware для проверки доступа домена к ресурсам
+/// </summary>
+public class RequestMonitoringMiddleware(RequestDelegate next)
 {
+    /// <summary>
+    /// Проверяет статус домена и разрешает или блокирует запрос
+    /// </summary>
+    /// <param name="context">Контекст HTTP-запроса</param>
+    /// <param name="domainCheckService">Сервис проверки домена</param>
     public async Task InvokeAsync(HttpContext context, IDomainCheckService domainCheckService)
     {
         var domainStatus = await domainCheckService.IsDomainAllowedAsync(context);

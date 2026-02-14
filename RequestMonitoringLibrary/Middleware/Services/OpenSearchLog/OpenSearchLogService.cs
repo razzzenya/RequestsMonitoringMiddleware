@@ -1,42 +1,29 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using OpenSearch.Client;
-using RequestMonitoringLibrary.Enitites.Domain;
+using RequestMonitoring.Library.Enitites.Domain;
 
-namespace RequestMonitoringLibrary.Middleware.Services.OpenSearchLog;
+namespace RequestMonitoring.Library.Middleware.Services.OpenSearchLog;
 
-public class OpenSearchLogService : IOpenSearchLogService
+/// <summary>
+/// Сервис для работы с логами в OpenSearch
+/// </summary>
+public class OpenSearchLogService(IOpenSearchClient client, IConfiguration configuration) : IOpenSearchLogService
 {
-    private readonly OpenSearchClient client;
-    private readonly string index;
+    private readonly IOpenSearchClient client = client;
+    private readonly string index = configuration["OpenSearch:Index"] ?? "request-logs";
 
-    public OpenSearchLogService(IConfiguration configuration)
-    {
-        var uriString = configuration["OpenSearch:Uri"] ?? "http://localhost:9200";
-        index = configuration["OpenSearch:Index"] ?? "request-logs";
-        var uri = new Uri(uriString);
-
-        var settings = new ConnectionSettings(uri)
-            .DefaultIndex(index)
-            .ThrowExceptions();
-
-        client = new OpenSearchClient(settings);
-
-        var existsResp = client.Indices.Exists(index);
-        if (!existsResp.Exists)
-        {
-            client.Indices.Create(index, c => c
-                .Map<RequestLog>(m => m
-                    .AutoMap()
-                )
-            );
-        }
-    }
-
+    /// <summary>
+    /// Индексирует лог запроса в OpenSearch
+    /// </summary>
+    /// <param name="log">Лог запроса для индексации</param>
     public async Task IndexAsync(RequestLog log)
     {
         await client.IndexAsync(log, i => i.Index(index).Id(log.Id));
     }
 
+    /// <summary>
+    /// Выполняет поиск логов в OpenSearch
+    /// </summary>
     public async Task<List<RequestLog>> SearchAsync(string query, int size = 50)
     {
         var resp = await client.SearchAsync<RequestLog>(s => s

@@ -1,7 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using RequestMonitoringLibrary.Enitites.Domain;
+using Microsoft.EntityFrameworkCore;
+using RequestMonitoring.Library.Enitites.Domain;
 
-namespace RequestMonitoringLibrary.Context;
+namespace RequestMonitoring.Library.Context;
 
 public class DomainListsContext(DbContextOptions<DomainListsContext> options) : DbContext(options)
 {

@@ -4,7 +4,7 @@
 
 #pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
 
-namespace RequestMonitoringLibrary.Migrations
+namespace RequestMonitoring.Library.Migrations
 {
     /// <inheritdoc />
     public partial class Initial : Migration
@@ -26,7 +26,7 @@ namespace RequestMonitoringLibrary.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Domains",
+                name: "domain",
                 columns: table => new
                 {
                     id = table.Column<int>(type: "INTEGER", nullable: false)
@@ -36,9 +36,9 @@ namespace RequestMonitoringLibrary.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Domains", x => x.id);
+                    table.PrimaryKey("PK_domain", x => x.id);
                     table.ForeignKey(
-                        name: "FK_Domains_DomainStatusTypes_status_id",
+                        name: "FK_domain_DomainStatusTypes_status_id",
                         column: x => x.status_id,
                         principalTable: "DomainStatusTypes",
                         principalColumn: "id",
@@ -56,8 +56,8 @@ namespace RequestMonitoringLibrary.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Domains_status_id",
-                table: "Domains",
+                name: "IX_domain_status_id",
+                table: "domain",
                 column: "status_id");
         }
 
@@ -65,7 +65,7 @@ namespace RequestMonitoringLibrary.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Domains");
+                name: "domain");
 
             migrationBuilder.DropTable(
                 name: "DomainStatusTypes");
