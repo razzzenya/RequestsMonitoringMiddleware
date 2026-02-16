@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Test.Api\RequestMonitoring.Test.Api.csproj" />
+    <ProjectReference Include="..\RequestMonitoring.Test.Api\RequestMonitoring.Test.Api.csproj" />
   </ItemGroup>
 
 </Project>

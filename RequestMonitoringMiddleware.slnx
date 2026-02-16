@@ -1,10 +1,10 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="RequestMonitoring.AppHost/RequestMonitoring.AppHost.csproj" Id="12460a70-3d27-4abc-80ca-da559e5d9f2a" />
-    <Project Path="RequestMonitoringLibrary/RequestMonitoring.Library.csproj" />
+    <Project Path="RequestMonitoring.Library/RequestMonitoring.Library.csproj" />
   </Folder>
   <Folder Name="/test/">
+    <Project Path="RequestMonitoring.Test.Api/RequestMonitoring.Test.Api.csproj" />
     <Project Path="RequestMonitoring.Tests/RequestMonitoring.Tests.csproj" Id="16808594-8fce-48c3-aa42-018033001de2" />
-    <Project Path="Test.Api/RequestMonitoring.Test.Api.csproj" />
   </Folder>
 </Solution>
