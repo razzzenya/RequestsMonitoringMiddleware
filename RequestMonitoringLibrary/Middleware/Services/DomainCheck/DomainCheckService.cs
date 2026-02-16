@@ -15,7 +15,9 @@ public class DomainCheckService(DomainListsContext dbcontext) : IDomainCheckServ
     /// </summary>
     public async Task<DomainStatusType> IsDomainAllowedAsync(HttpContext context)
     {
-        var domain = context.Request.Host.Host; 
+        // Для тестов: проверяем X-Test-Host заголовок
+        var domain = context.Request.Headers["X-Test-Host"].FirstOrDefault() 
+                     ?? context.Request.Host.Host; 
         var allowedDomains = await dbcontext.Domains.Where(s => s.DomainStatusTypeId == 1).Select(h => h.Host).ToListAsync();
         var greylistedDomains = await dbcontext.Domains.Where(s => s.DomainStatusTypeId == 2).Select(h => h.Host).ToListAsync();
         if (greylistedDomains.Contains(domain))
