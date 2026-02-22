@@ -30,7 +30,6 @@ public static class ServiceCollectionExtensions
 
             var client = new OpenSearchClient(settings);
 
-            // Создаем индекс при первом запуске, если его не существует
             var existsResp = client.Indices.Exists(index);
             if (!existsResp.Exists)
             {

@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
+﻿<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -7,6 +7,10 @@
     <Nullable>enable</Nullable>
     <UserSecretsId>389b33a6-b6bc-4079-9b73-112ba6f9a090</UserSecretsId>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Redis" Version="13.1.1" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\RequestMonitoring.Test.Api\RequestMonitoring.Test.Api.csproj" />
