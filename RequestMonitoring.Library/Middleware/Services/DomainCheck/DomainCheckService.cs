@@ -15,7 +15,7 @@ namespace RequestMonitoring.Library.Middleware.Services.DomainCheck;
 public class DomainCheckService(IConfiguration configuration, IDistributedCache cache, DomainListsContext dbcontext, ILogger<DomainCheckService> logger) : IDomainCheckService
 {
     private readonly int cacheExpirationMinutes = configuration.GetValue("CacheSettings:ExpirationMinutes", 10);
-    
+
     /// <summary>
     /// Проверяет статус домена из контекста запроса
     /// </summary>
@@ -59,7 +59,7 @@ public class DomainCheckService(IConfiguration configuration, IDistributedCache 
 
         if (domainEntity?.DomainStatusType != null)
         {
-            logger.LogDebug("Domain {Domain} found in database with status {Status}", 
+            logger.LogDebug("Domain {Domain} found in database with status {Status}",
                 domain, domainEntity.DomainStatusType.Name);
             return domainEntity.DomainStatusType;
         }
@@ -80,9 +80,9 @@ public class DomainCheckService(IConfiguration configuration, IDistributedCache 
             {
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(cacheExpirationMinutes)
             };
-            
+
             await cache.SetStringAsync(cacheKey, serializedData, cacheOptions);
-            logger.LogDebug("Cached domain status with key {CacheKey} for {Minutes} minutes", 
+            logger.LogDebug("Cached domain status with key {CacheKey} for {Minutes} minutes",
                 cacheKey, cacheExpirationMinutes);
         }
         catch (Exception ex)

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
-using RequestMonitoring.Library.Middleware.Services.OpenSearchLog;
 using RequestMonitoring.Library.Enitites.Domain;
+using RequestMonitoring.Library.Middleware.Services.OpenSearchLog;
 using System.Diagnostics;
 
 namespace RequestMonitoring.Library.Middleware;

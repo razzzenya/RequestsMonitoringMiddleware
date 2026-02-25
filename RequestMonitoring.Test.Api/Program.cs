@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using RequestMonitoring.Library.Middleware;
-using RequestMonitoring.Library.Middleware.Services.OpenSearchLog;
 using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Extensions;
+using RequestMonitoring.Library.Middleware;
 using RequestMonitoring.Library.Middleware.Services.DomainCheck;
+using RequestMonitoring.Library.Middleware.Services.OpenSearchLog;
 
 var builder = WebApplication.CreateBuilder(args);
 

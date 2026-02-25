@@ -12,7 +12,7 @@ public interface IOpenSearchLogService
     /// </summary>
     /// <param name="log">Лог запроса для индексации</param>
     Task IndexAsync(RequestLog log);
-    
+
     /// <summary>
     /// Выполняет поиск логов в OpenSearch
     /// </summary>
