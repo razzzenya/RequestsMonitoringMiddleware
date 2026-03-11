@@ -1,24 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using RequestMonitoring.Library.Context;
-using RequestMonitoring.Library.Extensions;
-using RequestMonitoring.Library.Middleware.Services.DomainCheck;
-using RequestMonitoring.Library.Middleware.Services.OpenSearchLog;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<DomainListsContext>(opt =>
     opt.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
-builder.Services.AddOpenSearchClient(builder.Configuration);
-builder.Services.AddScoped<IDomainCheckService, DomainCheckService>();
-builder.Services.AddScoped<IOpenSearchLogService, OpenSearchLogService>();
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAdminPanel", policy =>
     {
         policy.WithOrigins(
-                builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
+                builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
                 ?? ["https://localhost:7043", "http://localhost:5157"]
             )
             .AllowAnyMethod()
@@ -44,7 +37,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
 app.UseCors("AllowAdminPanel");
+app.UseHttpsRedirection();
 app.MapControllers();
 app.Run();

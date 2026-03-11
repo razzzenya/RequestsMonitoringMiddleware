@@ -1,7 +1,11 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="RequestMonitoring.AdminApi/RequestMonitoring.AdminApi.csproj" />
-    <Project Path="RequestMonitoring.AdminPanel/RequestMonitoring.AdminPanel.csproj" />
+    <Project Path="RequestMonitoring.AdminApi/RequestMonitoring.AdminApi.csproj">
+      <Build Solution="Debug|*" Project="false" />
+    </Project>
+    <Project Path="RequestMonitoring.AdminPanel/RequestMonitoring.AdminPanel.csproj">
+      <Build Solution="Debug|*" Project="false" />
+    </Project>
     <Project Path="RequestMonitoring.AppHost/RequestMonitoring.AppHost.csproj" Id="12460a70-3d27-4abc-80ca-da559e5d9f2a" />
     <Project Path="RequestMonitoring.Library/RequestMonitoring.Library.csproj" />
   </Folder>

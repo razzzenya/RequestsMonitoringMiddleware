@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using RequestMonitoring.AdminApi.DTO;
 using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites.Domain;
-using RequestMonitoring.AdminApi.DTO;
 
 namespace RequestMonitoring.AdminApi.Controllers;
 
@@ -18,7 +18,7 @@ public class DomainsController(DomainListsContext context, ILogger<DomainsContro
             var domains = await context.Domains
                 .Include(d => d.DomainStatusType)
                 .ToListAsync();
-            
+
             return Ok(domains);
         }
         catch (Exception ex)
@@ -72,7 +72,7 @@ public class DomainsController(DomainListsContext context, ILogger<DomainsContro
                 return Conflict(new { message = "Domain with this host already exists" });
             }
 
-            var statusType = await context.DomainStatusTypes.FindAsync(dto.DomainStatusTypeId) 
+            var statusType = await context.DomainStatusTypes.FindAsync(dto.DomainStatusTypeId)
                 ?? throw new InvalidOperationException("Status type not found");
 
             var domain = new Domain
