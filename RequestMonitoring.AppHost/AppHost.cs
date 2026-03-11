@@ -22,4 +22,10 @@ var api = builder.AddProject<Projects.RequestMonitoring_Test_Api>("api")
     .WithEnvironment("OpenSearch__Uri", "http://localhost:9200")
     .WithEnvironment("OpenSearch__Index", "request-logs");
 
+builder.AddProject<Projects.RequestMonitoring_AdminPanel>("requestmonitoring-adminpanel")
+    .WaitFor(api)
+    .WithReference(api);
+
+builder.AddProject<Projects.RequestMonitoring_AdminApi>("requestmonitoring-adminapi");
+
 builder.Build().Run();
