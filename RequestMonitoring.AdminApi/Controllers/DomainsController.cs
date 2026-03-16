@@ -86,7 +86,7 @@ public class DomainsController(DomainListsContext context, ILogger<DomainsContro
             context.Domains.Add(domain);
             await context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetByIdAsync), new { id = domain.Id }, domain);
+            return Ok(domain);
         }
         catch (Exception ex)
         {
