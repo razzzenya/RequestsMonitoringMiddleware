@@ -38,14 +38,14 @@ public class DomainCacheService(IDistributedCache cache, DomainListsContext cont
                 .Select(d => d.Host)
                 .ToListAsync();
 
-            var tasks = allDomains.Select(host => 
+            var tasks = allDomains.Select(host =>
             {
                 var cacheKey = $"Domain_{host}";
                 return cache.RemoveAsync(cacheKey);
             });
 
             await Task.WhenAll(tasks);
-            
+
             logger.LogInformation("Cache invalidated for all {Count} domains", allDomains.Count);
         }
         catch (Exception ex)

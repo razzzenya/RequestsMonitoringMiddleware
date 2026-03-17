@@ -126,7 +126,7 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
             }
 
             var oldHost = domain.Host;
-            
+
             domain.Host = dto.Host;
             domain.DomainStatusTypeId = dto.DomainStatusTypeId;
             domain.DomainStatusType = await context.DomainStatusTypes.FindAsync(dto.DomainStatusTypeId)
@@ -161,7 +161,7 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
             }
 
             var hostToInvalidate = domain.Host;
-            
+
             context.Domains.Remove(domain);
             await context.SaveChangesAsync();
 

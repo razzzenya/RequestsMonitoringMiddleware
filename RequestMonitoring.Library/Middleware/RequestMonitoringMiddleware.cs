@@ -20,14 +20,14 @@ public class RequestMonitoringMiddleware(RequestDelegate next, ILogger<RequestMo
     public async Task InvokeAsync(HttpContext context, IDomainCheckService domainCheckService)
     {
         using var activity = ActivitySource.StartActivity("DomainCheck", ActivityKind.Server);
-        
+
         var domain = context.Request.Headers["X-Test-Host"].FirstOrDefault() ?? context.Request.Host.Host;
         activity?.SetTag("domain.name", domain);
-        
+
         logger.LogInformation("Checking domain access for {Domain}", domain);
 
         var domainStatus = await domainCheckService.IsDomainAllowedAsync(context);
-        
+
         activity?.SetTag("domain.status", domainStatus.Name);
         activity?.SetTag("domain.status.id", domainStatus.Id);
 

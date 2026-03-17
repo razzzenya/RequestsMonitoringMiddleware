@@ -21,7 +21,7 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
     public async Task InvokeAsync(HttpContext context, IOpenSearchLogService openSearchLogService)
     {
         using var activity = ActivitySource.StartActivity("LogRequest", ActivityKind.Server);
-        
+
         var sw = Stopwatch.StartNew();
 
         int? statusCode = null;

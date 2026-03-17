@@ -23,7 +23,11 @@ var api = builder.AddProject<Projects.RequestMonitoring_Test_Api>("api")
     .WithEnvironment("OpenSearch__Index", "request-logs");
 
 var adminApi = builder.AddProject<Projects.RequestMonitoring_AdminApi>("adminapi")
-    .WaitFor(api)
-    .WithReference(api);
+    .WaitFor(redis)
+    .WithReference(redis);
+
+var adminPanel = builder.AddProject<Projects.RequestMonitoring_AdminPanel>("adminpanel")
+    .WaitFor(adminApi)
+    .WithReference(adminApi);
 
 builder.Build().Run();

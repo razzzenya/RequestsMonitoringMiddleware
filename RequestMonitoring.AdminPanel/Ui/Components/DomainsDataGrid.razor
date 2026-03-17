@@ -1,0 +1,86 @@
+@inject IRequestMonitoringAdminPanelApiWrapper AdminPanelApi
+
+<Card>
+    <CardHeader>
+        <Row Class="justify-content-between">
+            <Column ColumnSize="ColumnSize.IsAuto">
+                <h4>Домены (всего: @Domains.Count())</h4>
+            </Column>
+            <Column ColumnSize="ColumnSize.IsAuto">
+                <Button Color="Color.Primary" Clicked="OpenCreateModal">
+                    Создать
+                </Button>
+            </Column>
+        </Row>
+    </CardHeader>
+    <CardBody>
+        <DataGrid TItem="Domain"
+                  Data="Domains"
+                  Responsive
+                  Striped
+                  Pageable
+                  ShowPager
+                  ShowPageSizes>
+            <DataGridColumns>
+                <DataGridColumn TItem="Domain"
+                                Caption="Действия">
+                    <DisplayTemplate>
+                        <Dropdown>
+                            <DropdownToggle Color="Color.Primary">
+                                Действия
+                            </DropdownToggle>
+                            <DropdownMenu>
+                                <DropdownItem Clicked="() => OpenEditPageAsync(context.Item)">
+                                    Редактировать
+                                </DropdownItem>
+                                <DropdownItem Clicked="() => DeleteDomainAsync(context.Item)">
+                                    Удалить
+                                </DropdownItem>
+                            </DropdownMenu>
+                        </Dropdown>
+                    </DisplayTemplate>
+                </DataGridColumn>
+                <DataGridColumn TItem="Domain"
+                                Field="@nameof(Domain.Id)"
+                                Caption="Id домена">
+                </DataGridColumn>
+                <DataGridColumn TItem="Domain" Caption="Id статуса">
+                    <DisplayTemplate>
+                        @context.Item.DomainStatusTypeId
+                    </DisplayTemplate>
+                </DataGridColumn>
+                <DataGridColumn TItem="Domain" Caption="Название домена">
+                    <DisplayTemplate>
+                        @context.Item.Host
+                    </DisplayTemplate>
+                </DataGridColumn>
+            </DataGridColumns>
+        </DataGrid>
+    </CardBody>
+</Card>
+
+
+@code {
+    private IEnumerable<Domain> Domains { get; set; } = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshDomainsCollection();
+        await base.OnInitializedAsync();
+    }
+
+    private async Task OpenCreateModal() { }
+
+    private async Task OpenEditPageAsync(Domain context) { }
+
+    private async Task DeleteDomainAsync(Domain context)
+    {
+        await AdminPanelApi.DeleteDomain(context.Id);
+        await RefreshDomainsCollection();
+    }
+
+    private async Task RefreshDomainsCollection() 
+    {
+        Domains = await AdminPanelApi.GetDomainList();
+    }
+}
