@@ -7,6 +7,8 @@ using RequestMonitoring.Library.Middleware.Services.OpenSearchLog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
+
 builder.Services.AddDbContext<DomainListsContext>(opt =>
     opt.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
@@ -34,5 +36,7 @@ app.UseMiddleware<RequestMonitoringMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
+app.MapDefaultEndpoints();
 
 app.Run();

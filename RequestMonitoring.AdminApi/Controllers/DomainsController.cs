@@ -3,12 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using RequestMonitoring.AdminApi.DTO;
 using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites.Domain;
+using RequestMonitoring.Library.Middleware.Services.DomainCache;
 
 namespace RequestMonitoring.AdminApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class DomainsController(DomainListsContext context, ILogger<DomainsController> logger) : ControllerBase
+public class DomainsController(DomainListsContext context, IDomainCacheService cacheService, ILogger<DomainsController> logger) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Domain>>> GetAllAsync()
@@ -86,6 +87,8 @@ public class DomainsController(DomainListsContext context, ILogger<DomainsContro
             context.Domains.Add(domain);
             await context.SaveChangesAsync();
 
+            await cacheService.InvalidateDomainAsync(domain.Host);
+
             return Ok(domain);
         }
         catch (Exception ex)
@@ -122,12 +125,20 @@ public class DomainsController(DomainListsContext context, ILogger<DomainsContro
                 return Conflict(new { message = "Domain with this host already exists" });
             }
 
+            var oldHost = domain.Host;
+            
             domain.Host = dto.Host;
             domain.DomainStatusTypeId = dto.DomainStatusTypeId;
             domain.DomainStatusType = await context.DomainStatusTypes.FindAsync(dto.DomainStatusTypeId)
                 ?? throw new InvalidOperationException("Status type not found");
 
             await context.SaveChangesAsync();
+
+            if (oldHost != dto.Host)
+            {
+                await cacheService.InvalidateDomainAsync(oldHost);
+            }
+            await cacheService.InvalidateDomainAsync(domain.Host);
 
             return Ok(domain);
         }
@@ -149,8 +160,12 @@ public class DomainsController(DomainListsContext context, ILogger<DomainsContro
                 return NotFound(new { message = $"Domain with ID {id} not found" });
             }
 
+            var hostToInvalidate = domain.Host;
+            
             context.Domains.Remove(domain);
             await context.SaveChangesAsync();
+
+            await cacheService.InvalidateDomainAsync(hostToInvalidate);
 
             return NoContent();
         }
@@ -158,6 +173,21 @@ public class DomainsController(DomainListsContext context, ILogger<DomainsContro
         {
             logger.LogError(ex, "Error deleting domain {DomainId}", id);
             return StatusCode(500, new { message = "Error deleting domain" });
+        }
+    }
+
+    [HttpPost("cache/invalidate")]
+    public async Task<ActionResult> InvalidateAllCacheAsync()
+    {
+        try
+        {
+            await cacheService.InvalidateAllDomainsAsync();
+            return Ok(new { message = "Cache invalidated successfully" });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error invalidating cache");
+            return StatusCode(500, new { message = "Error invalidating cache" });
         }
     }
 }

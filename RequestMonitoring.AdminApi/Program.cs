@@ -1,10 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using RequestMonitoring.Library.Context;
+using RequestMonitoring.Library.Extensions;
+using RequestMonitoring.Library.Middleware.Services.DomainCache;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
+
 builder.Services.AddDbContext<DomainListsContext>(opt =>
     opt.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+
+builder.AddRedisDistributedCache("cache");
+
+builder.Services.AddScoped<IDomainCacheService, DomainCacheService>();
 
 builder.Services.AddCors(options =>
 {
@@ -40,4 +48,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAdminPanel");
 app.UseHttpsRedirection();
 app.MapControllers();
+
+app.MapDefaultEndpoints();
+
 app.Run();
