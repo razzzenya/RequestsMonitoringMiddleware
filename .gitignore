@@ -365,3 +365,6 @@ FodyWeavers.xsd
 # SQLite temporary files
 *.db-shm
 *.db-wal
+
+# Bootstrap dist
+RequestMonitoring.AdminPanel/wwwroot/lib/bootstrap/dist/

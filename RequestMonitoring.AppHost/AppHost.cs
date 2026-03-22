@@ -27,7 +27,6 @@ var adminApi = builder.AddProject<Projects.RequestMonitoring_AdminApi>("adminapi
     .WithReference(redis);
 
 var adminPanel = builder.AddProject<Projects.RequestMonitoring_AdminPanel>("adminpanel")
-    .WaitFor(adminApi)
-    .WithReference(adminApi);
+    .WaitFor(adminApi);
 
 builder.Build().Run();
