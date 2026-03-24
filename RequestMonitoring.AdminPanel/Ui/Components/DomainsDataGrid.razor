@@ -1,64 +1,44 @@
 @inject IRequestMonitoringAdminPanelApiWrapper AdminPanelApi
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
-<Card>
-    <CardHeader>
-        <Row Class="justify-content-between">
-            <Column ColumnSize="ColumnSize.IsAuto">
-                <h4>Домены (всего: @Domains.Count())</h4>
-            </Column>
-            <Column ColumnSize="ColumnSize.IsAuto">
-                <Button Color="Color.Primary" Clicked="OpenCreateModal">
-                    Создать
-                </Button>
-            </Column>
-        </Row>
-    </CardHeader>
-    <CardBody>
-        <DataGrid TItem="Domain"
-                  Data="Domains"
-                  Responsive
-                  Striped
-                  Pageable
-                  ShowPager
-                  ShowPageSizes>
-            <DataGridColumns>
-                <DataGridColumn TItem="Domain"
-                                Caption="Действия">
-                    <DisplayTemplate>
-                        <Dropdown>
-                            <DropdownToggle Color="Color.Primary">
-                                Действия
-                            </DropdownToggle>
-                            <DropdownMenu>
-                                <DropdownItem Clicked="() => OpenEditPageAsync(context.Item)">
-                                    Редактировать
-                                </DropdownItem>
-                                <DropdownItem Clicked="() => DeleteDomainAsync(context.Item)">
-                                    Удалить
-                                </DropdownItem>
-                            </DropdownMenu>
-                        </Dropdown>
-                    </DisplayTemplate>
-                </DataGridColumn>
-                <DataGridColumn TItem="Domain"
-                                Field="@nameof(Domain.Id)"
-                                Caption="Id домена">
-                </DataGridColumn>
-                <DataGridColumn TItem="Domain" Caption="Id статуса">
-                    <DisplayTemplate>
-                        @context.Item.DomainStatusTypeId
-                    </DisplayTemplate>
-                </DataGridColumn>
-                <DataGridColumn TItem="Domain" Caption="Название домена">
-                    <DisplayTemplate>
-                        @context.Item.Host
-                    </DisplayTemplate>
-                </DataGridColumn>
-            </DataGridColumns>
-        </DataGrid>
-    </CardBody>
-</Card>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <MudText Typo="Typo.h6">Домены (всего: @Domains.Count())</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreateModal">
+        Создать
+    </MudButton>
+</div>
 
+<MudCard>
+    <MudCardContent>
+        <MudTable Items="Domains" Striped="true" Hover="true">
+            <HeaderContent>
+                <MudTh>Действия</MudTh>
+                <MudTh>Id домена</MudTh>
+                <MudTh>Id статуса</MudTh>
+                <MudTh>Название домена</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Действия">
+                    <MudMenu Icon="@Icons.Material.Filled.MoreVert" AriaLabel="Действия">
+                        <MudMenuItem OnClick="() => OpenEditPageAsync(context)">
+                            Редактировать
+                        </MudMenuItem>
+                        <MudMenuItem OnClick="() => DeleteDomainAsync(context)">
+                            Удалить
+                        </MudMenuItem>
+                    </MudMenu>
+                </MudTd>
+                <MudTd DataLabel="Id домена">@context.Id</MudTd>
+                <MudTd DataLabel="Id статуса">@context.DomainStatusTypeId</MudTd>
+                <MudTd DataLabel="Название домена">@context.Host</MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </MudCardContent>
+</MudCard>
 
 @code {
     private IEnumerable<Domain> Domains { get; set; } = [];
@@ -69,17 +49,65 @@
         await base.OnInitializedAsync();
     }
 
-    private async Task OpenCreateModal() { }
-
-    private async Task OpenEditPageAsync(Domain context) { }
-
-    private async Task DeleteDomainAsync(Domain context)
+    private async Task OpenCreateModal()
     {
-        await AdminPanelApi.DeleteDomain(context.Id);
-        await RefreshDomainsCollection();
+        var parameters = new DialogParameters<CreateDomainDialog>();
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<CreateDomainDialog>("Создание домена", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled)
+        {
+            await RefreshDomainsCollection();
+        }
     }
 
-    private async Task RefreshDomainsCollection() 
+    private async Task OpenEditPageAsync(Domain domain)
+    {
+        var parameters = new DialogParameters<EditDomainDialog>
+        {
+            { x => x.DomainId, domain.Id },
+            { x => x.Host, domain.Host },
+            { x => x.DomainStatusTypeId, domain.DomainStatusTypeId }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<EditDomainDialog>("Редактирование домена", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is not null && !result.Canceled)
+        {
+            await RefreshDomainsCollection();
+        }
+    }
+
+    private async Task DeleteDomainAsync(Domain domain)
+    {
+        var confirm = await DialogService.ShowMessageBox(
+            "Удаление домена",
+            $"Вы уверены, что хотите удалить домен \"{domain.Host}\"?",
+            yesText: "Удалить",
+            cancelText: "Отмена");
+
+        if (confirm != true)
+            return;
+
+        try
+        {
+            await AdminPanelApi.DeleteDomain(domain.Id);
+            Snackbar.Add("Домен успешно удалён", Severity.Success);
+            await RefreshDomainsCollection();
+        }
+        catch (ApiException ex) when (ex.StatusCode == 404)
+        {
+            Snackbar.Add("Домен не найден", Severity.Error);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Ошибка при удалении домена", Severity.Error);
+        }
+    }
+
+    private async Task RefreshDomainsCollection()
     {
         Domains = await AdminPanelApi.GetDomainList();
     }

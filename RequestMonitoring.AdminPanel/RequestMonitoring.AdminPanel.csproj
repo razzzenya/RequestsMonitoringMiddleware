@@ -12,17 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <OpenApiReference Include="Api\swagger.json" 
-                      ClassName="RequestMonitoringAdminPanelApi" 
-                      Namespace="RequestMonitoring.AdminPanel.Api" />
+    <OpenApiReference Include="Api\swagger.json" ClassName="RequestMonitoringAdminPanelApi" Namespace="RequestMonitoring.AdminPanel.Api" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Blazorise" Version="2.0.2" />
-    <PackageReference Include="Blazorise.Bootstrap5" Version="2.0.2" />
-    <PackageReference Include="Blazorise.Components" Version="2.0.2" />
-    <PackageReference Include="Blazorise.DataGrid" Version="2.0.2" />
-    <PackageReference Include="Blazorise.Icons.FontAwesome" Version="2.0.2" />
+    <PackageReference Include="MudBlazor" Version="8.8.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.3" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="7.0.2">
