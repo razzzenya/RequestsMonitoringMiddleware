@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using RequestMonitoring.Library.Middleware.Services.DomainCheck;
+using RequestMonitoring.Library.Middleware.Services.QuotaCheck;
 using System.Diagnostics;
 
 namespace RequestMonitoring.Library.Middleware;
@@ -15,9 +16,7 @@ public class RequestMonitoringMiddleware(RequestDelegate next, ILogger<RequestMo
     /// <summary>
     /// Проверяет статус домена и разрешает или блокирует запрос
     /// </summary>
-    /// <param name="context">Контекст HTTP-запроса</param>
-    /// <param name="domainCheckService">Сервис проверки домена</param>
-    public async Task InvokeAsync(HttpContext context, IDomainCheckService domainCheckService)
+    public async Task InvokeAsync(HttpContext context, IDomainCheckService domainCheckService, IQuotaService quotaService)
     {
         using var activity = ActivitySource.StartActivity("DomainCheck", ActivityKind.Server);
 
@@ -34,6 +33,18 @@ public class RequestMonitoringMiddleware(RequestDelegate next, ILogger<RequestMo
         switch (domainStatus.Id)
         {
             case 1:
+                var quotaResult = await quotaService.CheckAndIncrementAsync(domain);
+                activity?.SetTag("domain.quota", quotaResult.ToString());
+
+                if (quotaResult == QuotaCheckResult.Exceeded)
+                {
+                    logger.LogWarning("Domain {Domain} quota exceeded", domain);
+                    activity?.SetStatus(ActivityStatusCode.Error, "Quota exceeded");
+                    context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                    await context.Response.WriteAsync("Quota exceeded for this domain.");
+                    return;
+                }
+
                 logger.LogInformation("Domain {Domain} is whitelisted - allowing access", domain);
                 await next(context);
                 return;

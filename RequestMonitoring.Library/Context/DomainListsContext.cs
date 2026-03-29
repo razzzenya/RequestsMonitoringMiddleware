@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using RequestMonitoring.Library.Enitites.Domain;
+using RequestMonitoring.Library.Enitites;
 
 namespace RequestMonitoring.Library.Context;
 
@@ -7,6 +7,7 @@ public class DomainListsContext(DbContextOptions<DomainListsContext> options) : 
 {
     public required DbSet<Domain> Domains { get; set; }
     public required DbSet<DomainStatusType> DomainStatusTypes { get; set; }
+    public required DbSet<Quota> Quotas { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -17,5 +18,9 @@ public class DomainListsContext(DbContextOptions<DomainListsContext> options) : 
             new DomainStatusType { Id = 2, Name = "Greylisted" },
             new DomainStatusType { Id = 3, Name = "Unauthorized" }
         );
+
+        modelBuilder.Entity<Quota>()
+            .HasIndex(q => q.DomainId)
+            .IsUnique();
     }
 }

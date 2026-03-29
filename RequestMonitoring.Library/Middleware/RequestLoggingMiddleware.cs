@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using RequestMonitoring.Library.Enitites.Domain;
+using RequestMonitoring.Library.Enitites;
 using RequestMonitoring.Library.Middleware.Services.OpenSearchLog;
 using System.Diagnostics;
 

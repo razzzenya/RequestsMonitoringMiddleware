@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using OpenSearch.Client;
-using RequestMonitoring.Library.Enitites.Domain;
+using RequestMonitoring.Library.Enitites;
 
 namespace RequestMonitoring.Library.Middleware.Services.OpenSearchLog;
 

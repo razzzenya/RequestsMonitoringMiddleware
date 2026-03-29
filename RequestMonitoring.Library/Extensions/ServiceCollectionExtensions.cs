@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenSearch.Client;
-using RequestMonitoring.Library.Enitites.Domain;
+using RequestMonitoring.Library.Enitites;
 
 namespace RequestMonitoring.Library.Extensions;
 

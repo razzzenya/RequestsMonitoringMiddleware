@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RequestMonitoring.AdminApi.DTO;
 using RequestMonitoring.Library.Context;
-using RequestMonitoring.Library.Enitites.Domain;
+using RequestMonitoring.Library.Enitites;
 using RequestMonitoring.Library.Middleware.Services.DomainCache;
 
 namespace RequestMonitoring.AdminApi.Controllers;

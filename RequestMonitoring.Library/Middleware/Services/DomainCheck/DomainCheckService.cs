@@ -4,7 +4,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RequestMonitoring.Library.Context;
-using RequestMonitoring.Library.Enitites.Domain;
+using RequestMonitoring.Library.Enitites;
 using System.Text.Json;
 
 namespace RequestMonitoring.Library.Middleware.Services.DomainCheck;
