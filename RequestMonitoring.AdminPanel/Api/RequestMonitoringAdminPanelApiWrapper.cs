@@ -11,14 +11,15 @@ public class RequestMonitoringAdminPanelApiWrapper(IConfiguration configuration,
             ?? configuration["services:adminapi:http:0"]
             ?? "https://localhost:7213";
 
-        var client = new RequestMonitoringAdminPanelApi(baseUrl, httpClient)
+        httpClient.BaseAddress = new Uri(baseUrl);
+
+        return new RequestMonitoringAdminPanelApi(httpClient)
         {
             ReadResponseAsString = true
         };
-        return client;
     }
 
-    public async Task<Domain> CreateDomain(CreateDomainDTO dto) => await _client.DomainsPOSTAsync(dto);
+    public async Task<DomainDto> CreateDomain(CreateUpdateDomainDto dto) => await _client.DomainsPOSTAsync(dto);
 
     public async Task DeleteDomain(int id)
     {
@@ -32,9 +33,9 @@ public class RequestMonitoringAdminPanelApiWrapper(IConfiguration configuration,
         }
     }
 
-    public async Task<Domain> GetDomain(int id) => await _client.DomainsGETAsync(id);
+    public async Task<DomainDto> GetDomain(int id) => await _client.DomainsGETAsync(id);
 
-    public async Task<IEnumerable<Domain>> GetDomainList() => await _client.DomainsAllAsync();
+    public async Task<IEnumerable<DomainDto>> GetDomainList() => await _client.DomainsAllAsync();
 
-    public async Task<Domain> UpdateDomain(int id, UpdateDomainDTO dto) => await _client.DomainsPUTAsync(id, dto);
+    public async Task<DomainDto> UpdateDomain(int id, CreateUpdateDomainDto dto) => await _client.DomainsPUTAsync(id, dto);
 }

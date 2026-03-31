@@ -1,7 +1,14 @@
+using Mapster;
 using Microsoft.EntityFrameworkCore;
+using RequestMonitoring.AdminApi.DTO;
 using RequestMonitoring.Library.Context;
+using RequestMonitoring.Library.Enitites;
 using RequestMonitoring.Library.Extensions;
 using RequestMonitoring.Library.Middleware.Services.DomainCache;
+using Scalar.AspNetCore;
+
+TypeAdapterConfig<Domain, DomainDto>.NewConfig()
+    .Map(dest => dest.DomainStatusName, src => src.DomainStatusType.Name);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,8 +36,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddOpenApi();
 
 builder.Services.AddHttpClient();
 
@@ -38,11 +44,8 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Request Monitoring Admin API v1");
-    });
+    app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseCors("AllowAdminPanel");

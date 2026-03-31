@@ -41,7 +41,7 @@
 </MudCard>
 
 @code {
-    private IEnumerable<Domain> Domains { get; set; } = [];
+    private IEnumerable<DomainDto> Domains { get; set; } = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -62,7 +62,7 @@
         }
     }
 
-    private async Task OpenEditPageAsync(Domain domain)
+    private async Task OpenEditPageAsync(DomainDto domain)
     {
         var parameters = new DialogParameters<EditDomainDialog>
         {
@@ -80,7 +80,7 @@
         }
     }
 
-    private async Task DeleteDomainAsync(Domain domain)
+    private async Task DeleteDomainAsync(DomainDto domain)
     {
         var confirm = await DialogService.ShowMessageBox(
             "Удаление домена",

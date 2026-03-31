@@ -1,3 +1,4 @@
+using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RequestMonitoring.AdminApi.DTO;
@@ -7,12 +8,20 @@ using RequestMonitoring.Library.Middleware.Services.DomainCache;
 
 namespace RequestMonitoring.AdminApi.Controllers;
 
+/// <summary>
+/// Управление доменами
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class DomainsController(DomainListsContext context, IDomainCacheService cacheService, ILogger<DomainsController> logger) : ControllerBase
 {
+    /// <summary>
+    /// Получить список всех доменов
+    /// </summary>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Domain>>> GetAllAsync()
+    [ProducesResponseType<IEnumerable<DomainDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<DomainDto>>> GetAllAsync()
     {
         try
         {
@@ -20,7 +29,7 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
                 .Include(d => d.DomainStatusType)
                 .ToListAsync();
 
-            return Ok(domains);
+            return Ok(domains.Adapt<IEnumerable<DomainDto>>());
         }
         catch (Exception ex)
         {
@@ -29,8 +38,15 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
         }
     }
 
+    /// <summary>
+    /// Получить домен по идентификатору
+    /// </summary>
+    /// <param name="id">Идентификатор домена</param>
     [HttpGet("{id}")]
-    public async Task<ActionResult<Domain>> GetByIdAsync(int id)
+    [ProducesResponseType<DomainDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DomainDto>> GetByIdAsync(int id)
     {
         try
         {
@@ -39,11 +55,9 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             if (domain == null)
-            {
                 return NotFound(new { message = $"Domain with ID {id} not found" });
-            }
 
-            return Ok(domain);
+            return Ok(domain.Adapt<DomainDto>());
         }
         catch (Exception ex)
         {
@@ -52,29 +66,26 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
         }
     }
 
+    /// <summary>
+    /// Создать новый домен
+    /// </summary>
+    /// <param name="dto">Данные нового домена</param>
     [HttpPost]
-    public async Task<ActionResult<Domain>> CreateAsync([FromBody] CreateDomainDTO dto)
+    [ProducesResponseType<DomainDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DomainDto>> CreateAsync([FromBody] CreateUpdateDomainDto dto)
     {
         try
         {
-            var statusExists = await context.DomainStatusTypes
-                .AnyAsync(s => s.Id == dto.DomainStatusTypeId);
-
-            if (!statusExists)
-            {
+            var statusType = await context.DomainStatusTypes.FindAsync(dto.DomainStatusTypeId);
+            if (statusType == null)
                 return BadRequest(new { message = "Invalid domain status type ID" });
-            }
 
-            var hostExists = await context.Domains
-                .AnyAsync(d => d.Host == dto.Host);
-
+            var hostExists = await context.Domains.AnyAsync(d => d.Host == dto.Host);
             if (hostExists)
-            {
                 return Conflict(new { message = "Domain with this host already exists" });
-            }
-
-            var statusType = await context.DomainStatusTypes.FindAsync(dto.DomainStatusTypeId)
-                ?? throw new InvalidOperationException("Status type not found");
 
             var domain = new Domain
             {
@@ -89,7 +100,7 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
 
             await cacheService.InvalidateDomainAsync(domain.Host);
 
-            return Ok(domain);
+            return Ok(domain.Adapt<DomainDto>());
         }
         catch (Exception ex)
         {
@@ -98,49 +109,46 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
         }
     }
 
+    /// <summary>
+    /// Обновить домен
+    /// </summary>
+    /// <param name="id">Идентификатор домена</param>
+    /// <param name="dto">Новые данные домена</param>
     [HttpPut("{id}")]
-    public async Task<ActionResult<Domain>> UpdateAsync(int id, [FromBody] UpdateDomainDTO dto)
+    [ProducesResponseType<DomainDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<DomainDto>> UpdateAsync(int id, [FromBody] CreateUpdateDomainDto dto)
     {
         try
         {
             var domain = await context.Domains.FindAsync(id);
             if (domain == null)
-            {
                 return NotFound(new { message = $"Domain with ID {id} not found" });
-            }
 
-            var statusExists = await context.DomainStatusTypes
-                .AnyAsync(s => s.Id == dto.DomainStatusTypeId);
-
-            if (!statusExists)
-            {
+            var statusType = await context.DomainStatusTypes.FindAsync(dto.DomainStatusTypeId);
+            if (statusType == null)
                 return BadRequest(new { message = "Invalid domain status type ID" });
-            }
 
-            var hostExists = await context.Domains
-                .AnyAsync(d => d.Host == dto.Host && d.Id != id);
-
+            var hostExists = await context.Domains.AnyAsync(d => d.Host == dto.Host && d.Id != id);
             if (hostExists)
-            {
                 return Conflict(new { message = "Domain with this host already exists" });
-            }
 
             var oldHost = domain.Host;
 
             domain.Host = dto.Host;
             domain.DomainStatusTypeId = dto.DomainStatusTypeId;
-            domain.DomainStatusType = await context.DomainStatusTypes.FindAsync(dto.DomainStatusTypeId)
-                ?? throw new InvalidOperationException("Status type not found");
+            domain.DomainStatusType = statusType;
 
             await context.SaveChangesAsync();
 
             if (oldHost != dto.Host)
-            {
                 await cacheService.InvalidateDomainAsync(oldHost);
-            }
             await cacheService.InvalidateDomainAsync(domain.Host);
 
-            return Ok(domain);
+            return Ok(domain.Adapt<DomainDto>());
         }
         catch (Exception ex)
         {
@@ -149,16 +157,21 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
         }
     }
 
+    /// <summary>
+    /// Удалить домен
+    /// </summary>
+    /// <param name="id">Идентификатор домена</param>
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteAsync(int id)
     {
         try
         {
             var domain = await context.Domains.FindAsync(id);
             if (domain == null)
-            {
                 return NotFound(new { message = $"Domain with ID {id} not found" });
-            }
 
             var hostToInvalidate = domain.Host;
 
@@ -176,7 +189,12 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
         }
     }
 
+    /// <summary>
+    /// Сбросить кэш всех доменов
+    /// </summary>
     [HttpPost("cache/invalidate")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> InvalidateAllCacheAsync()
     {
         try
