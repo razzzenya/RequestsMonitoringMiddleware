@@ -13,9 +13,14 @@ public enum QuotaCheckResult
     Allowed,
 
     /// <summary>
-    /// Квота исчерпана или истекла
+    /// Квота исчерпана или истекла - домен переводится в Greylisted
     /// </summary>
-    Exceeded
+    Exceeded,
+
+    /// <summary>
+    /// Периодическая квота исчерпана - домен не блокируется, сбросится по истечению периода
+    /// </summary>
+    TemporarilyExceeded
 }
 
 public interface IQuotaService

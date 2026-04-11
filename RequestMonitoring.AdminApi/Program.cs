@@ -5,6 +5,7 @@ using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites;
 using RequestMonitoring.Library.Extensions;
 using RequestMonitoring.Library.Middleware.Services.DomainCache;
+using RequestMonitoring.Library.Middleware.Services.QuotaCache;
 using Scalar.AspNetCore;
 
 TypeAdapterConfig<Domain, DomainDto>.NewConfig()
@@ -20,6 +21,7 @@ builder.Services.AddDbContext<DomainListsContext>(opt =>
 builder.AddRedisDistributedCache("cache");
 
 builder.Services.AddScoped<IDomainCacheService, DomainCacheService>();
+builder.Services.AddScoped<IQuotaCacheService, QuotaCacheService>();
 
 builder.Services.AddCors(options =>
 {

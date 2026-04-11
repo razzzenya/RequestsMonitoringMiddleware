@@ -38,10 +38,18 @@ public class RequestMonitoringMiddleware(RequestDelegate next, ILogger<RequestMo
 
                 if (quotaResult == QuotaCheckResult.Exceeded)
                 {
-                    logger.LogWarning("Domain {Domain} quota exceeded", domain);
+                    logger.LogWarning("Domain {Domain} quota exceeded, domain moved to Greylisted", domain);
                     activity?.SetStatus(ActivityStatusCode.Error, "Quota exceeded");
+                    context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
+                    await context.Response.WriteAsync("Quota exceeded. This domain has been greylisted.");
+                    return;
+                }
+                else if (quotaResult == QuotaCheckResult.TemporarilyExceeded)
+                {
+                    logger.LogWarning("Domain {Domain} periodic quota temporarily exceeded", domain);
+                    activity?.SetStatus(ActivityStatusCode.Error, "Periodic quota exceeded");
                     context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-                    await context.Response.WriteAsync("Quota exceeded for this domain.");
+                    await context.Response.WriteAsync("Too many requests. Quota will reset at the end of the current period.");
                     return;
                 }
 

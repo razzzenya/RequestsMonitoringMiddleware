@@ -17,13 +17,20 @@ public class Quota
     public required Domain Domain { get; set; }
 
     /// <summary>
+    /// Тип квоты
+    /// </summary>
+    [Column("type")]
+    [Required]
+    public required QuotaType Type { get; set; }
+
+    /// <summary>
     /// Макс. кол-во запросов, null = безлимит
     /// </summary>
     [Column("max_requests")]
     public int? MaxRequests { get; set; }
 
     /// <summary>
-    /// Период сброса счётчика в секундаъ, null = счётчик не сбрасывается
+    /// Период сброса счётчика в секундах, null = счётчик не сбрасывается
     /// </summary>
     [Column("period_seconds")]
     public int? PeriodSeconds { get; set; }

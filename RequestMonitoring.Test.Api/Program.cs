@@ -4,6 +4,8 @@ using RequestMonitoring.Library.Extensions;
 using RequestMonitoring.Library.Middleware;
 using RequestMonitoring.Library.Middleware.Services.DomainCheck;
 using RequestMonitoring.Library.Middleware.Services.OpenSearchLog;
+using RequestMonitoring.Library.Middleware.Services.DomainCache;
+using RequestMonitoring.Library.Middleware.Services.QuotaCache;
 using RequestMonitoring.Library.Middleware.Services.QuotaCheck;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +20,8 @@ builder.Services.AddOpenSearchClient(builder.Configuration);
 builder.Services.AddScoped<IDomainCheckService, DomainCheckService>();
 builder.Services.AddScoped<IOpenSearchLogService, OpenSearchLogService>();
 builder.Services.AddScoped<IQuotaService, QuotaService>();
+builder.Services.AddScoped<IDomainCacheService, DomainCacheService>();
+builder.Services.AddScoped<IQuotaCacheService, QuotaCacheService>();
 builder.AddRedisDistributedCache("cache");
 
 builder.Services.AddControllers();
