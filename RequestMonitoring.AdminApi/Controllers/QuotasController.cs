@@ -40,6 +40,7 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
     /// </summary>
     /// <param name="id">Идентификатор квоты</param>
     [HttpGet("{id}")]
+    [EndpointName("GetQuotaById")]
     [ProducesResponseType<QuotaDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -65,6 +66,7 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
     /// </summary>
     /// <param name="domainId">Идентификатор домена</param>
     [HttpGet("by-domain/{domainId}")]
+    [EndpointName("GetQuotaByDomainId")]
     [ProducesResponseType<QuotaDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
