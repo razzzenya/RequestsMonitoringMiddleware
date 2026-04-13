@@ -94,7 +94,7 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<QuotaDto>> CreateAsync([FromBody] CreateUpdateQuotaDto dto)
+    public async Task<ActionResult<QuotaDto>> CreateAsync([FromBody] CreateQuotaDto dto)
     {
         try
         {
@@ -142,10 +142,9 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
     /// <param name="dto">Новые данные квоты</param>
     [HttpPut("{id}")]
     [ProducesResponseType<QuotaDto>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<QuotaDto>> UpdateAsync(int id, [FromBody] CreateUpdateQuotaDto dto)
+    public async Task<ActionResult<QuotaDto>> UpdateAsync(int id, [FromBody] UpdateQuotaDto dto)
     {
         try
         {
@@ -153,20 +152,6 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
             if (quota == null)
                 return NotFound(new { message = $"Quota with ID {id} not found" });
 
-            var domainExists = await context.Domains.AnyAsync(d => d.Id == dto.DomainId);
-            if (!domainExists)
-                return BadRequest(new { message = "Domain not found" });
-
-            if (quota.DomainId != dto.DomainId)
-            {
-                var quotaExists = await context.Quotas.AnyAsync(q => q.DomainId == dto.DomainId);
-                if (quotaExists)
-                    return Conflict(new { message = "Quota for this domain already exists" });
-            }
-
-            var oldDomainId = quota.DomainId;
-
-            quota.DomainId = dto.DomainId;
             quota.Type = dto.Type;
             quota.MaxRequests = dto.MaxRequests;
             quota.PeriodSeconds = dto.PeriodSeconds;
@@ -174,8 +159,6 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
 
             await context.SaveChangesAsync();
 
-            if (oldDomainId != dto.DomainId)
-                await cacheService.InvalidateQuotaAsync(oldDomainId);
             await cacheService.InvalidateQuotaAsync(quota.DomainId);
 
             return Ok(quota.Adapt<QuotaDto>());
