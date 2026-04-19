@@ -1,0 +1,110 @@
+@inject IRequestMonitoringAdminPanelApiWrapper AdminPanelApi
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Редактирование квоты</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+        }
+        <MudForm @ref="form">
+            <MudSelect T="QuotaType" @bind-Value="type" Label="Тип квоты" Required="true" RequiredError="Укажите тип квоты">
+                @foreach (var t in Enum.GetValues<QuotaType>())
+                {
+                    <MudSelectItem Value="t">@QuotaTypeHelper.GetDisplayName(t)</MudSelectItem>
+                }
+            </MudSelect>
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2">@QuotaTypeHelper.GetDescription(type)</MudText>
+            <MudNumericField @bind-Value="maxRequests"
+                             Label="Макс. запросов"
+                             Min="0"
+                             Disabled="!HasMaxRequests" />
+            <MudNumericField @bind-Value="periodSeconds"
+                             Label="Период сброса (сек.)"
+                             Min="0"
+                             Disabled="!HasPeriod" />
+            <MudDatePicker @bind-Date="expiresAt"
+                           Label="Дата истечения"
+                           Clearable="true"
+                           Disabled="!HasExpiry" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Отмена</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Сохранить</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public int QuotaId { get; set; }
+
+    [Parameter]
+    public int Type { get; set; }
+
+    [Parameter]
+    public int? MaxRequests { get; set; }
+
+    [Parameter]
+    public int? PeriodSeconds { get; set; }
+
+    [Parameter]
+    public DateTime? ExpiresAt { get; set; }
+
+    private MudForm form = null!;
+    private QuotaType type;
+    private int? maxRequests;
+    private int? periodSeconds;
+    private DateTime? expiresAt;
+    private string? errorMessage;
+
+    private bool HasMaxRequests => type is QuotaType.Periodic or QuotaType.Total or QuotaType.ExpiringTotal or QuotaType.ExpiringPeriodic;
+    private bool HasPeriod => type is QuotaType.Periodic or QuotaType.ExpiringPeriodic;
+    private bool HasExpiry => type is QuotaType.ExpiringUnlimited or QuotaType.ExpiringTotal or QuotaType.ExpiringPeriodic;
+
+    protected override void OnInitialized()
+    {
+        type = (QuotaType)Type;
+        maxRequests = MaxRequests;
+        periodSeconds = PeriodSeconds;
+        expiresAt = ExpiresAt;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        await form.Validate();
+        if (!form.IsValid)
+            return;
+
+        errorMessage = null;
+
+        var dto = new UpdateQuotaDto
+        {
+            Type = (int)type,
+            MaxRequests = HasMaxRequests ? maxRequests : null,
+            PeriodSeconds = HasPeriod ? periodSeconds : null,
+            ExpiresAt = HasExpiry ? expiresAt : null
+        };
+
+        try
+        {
+            await AdminPanelApi.UpdateQuota(QuotaId, dto);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (ApiException ex) when (ex.StatusCode == 404)
+        {
+            errorMessage = "Квота не найдена";
+        }
+        catch (Exception)
+        {
+            errorMessage = "Произошла ошибка при редактировании квоты";
+        }
+    }
+}

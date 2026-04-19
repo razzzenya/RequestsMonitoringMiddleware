@@ -14,11 +14,12 @@
                           Label="Название домена"
                           Required="true"
                           RequiredError="Укажите название домена" />
-            <MudNumericField @bind-Value="domainStatusTypeId"
-                             Label="Id статуса"
-                             Required="true"
-                             RequiredError="Укажите Id статуса"
-                             Min="0" />
+            <MudSelect T="int" @bind-Value="domainStatusTypeId" Label="Статус" Required="true" RequiredError="Укажите статус домена">
+                @foreach (var (id, name) in StatusOptions)
+                {
+                    <MudSelectItem Value="id">@name</MudSelectItem>
+                }
+            </MudSelect>
         </MudForm>
     </DialogContent>
     <DialogActions>
@@ -33,8 +34,15 @@
 
     private MudForm form = null!;
     private string host = string.Empty;
-    private int domainStatusTypeId;
+    private int domainStatusTypeId = 1;
     private string? errorMessage;
+
+    private static readonly (int Id, string Name)[] StatusOptions =
+    [
+        (1, "Белый список"),
+        (2, "Серый список"),
+        (3, "Неавторизован")
+    ];
 
     private void Cancel() => MudDialog.Cancel();
 
@@ -59,7 +67,7 @@
         }
         catch (ApiException ex) when (ex.StatusCode == 400)
         {
-            errorMessage = "Неверный Id статуса домена";
+            errorMessage = "Неверный статус домена";
         }
         catch (ApiException ex) when (ex.StatusCode == 409)
         {

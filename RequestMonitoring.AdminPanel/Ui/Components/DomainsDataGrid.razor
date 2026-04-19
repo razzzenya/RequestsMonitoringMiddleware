@@ -15,7 +15,7 @@
             <HeaderContent>
                 <MudTh>Действия</MudTh>
                 <MudTh>Id домена</MudTh>
-                <MudTh>Id статуса</MudTh>
+                <MudTh>Статус</MudTh>
                 <MudTh>Название домена</MudTh>
             </HeaderContent>
             <RowTemplate>
@@ -30,7 +30,7 @@
                     </MudMenu>
                 </MudTd>
                 <MudTd DataLabel="Id домена">@context.Id</MudTd>
-                <MudTd DataLabel="Id статуса">@context.DomainStatusTypeId</MudTd>
+                <MudTd DataLabel="Статус">@GetStatusName(context.DomainStatusName)</MudTd>
                 <MudTd DataLabel="Название домена">@context.Host</MudTd>
             </RowTemplate>
             <PagerContent>
@@ -111,4 +111,12 @@
     {
         Domains = await AdminPanelApi.GetDomainList();
     }
+
+    private static string GetStatusName(string? name) => name switch
+    {
+        "Allowed"      => "Белый список",
+        "Greylisted"   => "Серый список",
+        "Unauthorized" => "Неавторизован",
+        _              => name ?? "—"
+    };
 }
