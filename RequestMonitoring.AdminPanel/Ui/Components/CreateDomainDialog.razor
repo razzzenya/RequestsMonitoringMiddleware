@@ -17,7 +17,7 @@
             <MudSelect T="int" @bind-Value="domainStatusTypeId" Label="Статус" Required="true" RequiredError="Укажите статус домена">
                 @foreach (var (id, name) in StatusOptions)
                 {
-                    <MudSelectItem Value="id">@name</MudSelectItem>
+                    <MudSelectItem Value="@id">@name</MudSelectItem>
                 }
             </MudSelect>
         </MudForm>
