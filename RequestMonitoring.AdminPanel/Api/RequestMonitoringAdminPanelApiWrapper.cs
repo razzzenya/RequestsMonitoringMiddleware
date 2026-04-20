@@ -49,15 +49,15 @@ public class RequestMonitoringAdminPanelApiWrapper(IConfiguration configuration,
 
     public async Task<DomainDto> GetDomain(int id) => await _client.DomainsGETAsync(id);
 
-    public async Task<IReadOnlyList<DomainDto>> GetDomainList() => (await _client.DomainsAllAsync()).ToList();
+    public async Task<IReadOnlyList<DomainDto>> GetDomainList() => (IReadOnlyList<DomainDto>)await _client.DomainsAllAsync();
 
-    public async Task<IReadOnlyList<DomainStatusTypeDto>> GetDomainStatusTypes() => (await _client.DomainStatusTypesAsync()).ToList();
+    public async Task<IReadOnlyList<DomainStatusTypeDto>> GetDomainStatusTypes() => (IReadOnlyList<DomainStatusTypeDto>)await _client.DomainStatusTypesAsync();
 
     public async Task<QuotaDto> GetQuota(int id) => await _client.GetQuotaByIdAsync(id);
 
     public Task<QuotaDto> GetQuotaByDomainId(int id) => _client.GetQuotaByDomainIdAsync(id);
 
-    public async Task<IReadOnlyList<QuotaDto>> GetQuotaList() => (await _client.QuotasAllAsync()).ToList();
+    public async Task<IReadOnlyList<QuotaDto>> GetQuotaList() => (IReadOnlyList<QuotaDto>)await _client.QuotasAllAsync();
 
     public async Task<QuotaDto> ResetCounter(int id) => await _client.ResetCounterAsync(id);
 

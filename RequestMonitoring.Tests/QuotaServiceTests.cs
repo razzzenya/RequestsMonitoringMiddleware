@@ -7,7 +7,6 @@ using RequestMonitoring.Library.Enitites;
 using RequestMonitoring.Library.Middleware.Services.DomainCache;
 using RequestMonitoring.Library.Middleware.Services.QuotaCheck;
 using StackExchange.Redis;
-using System.Linq;
 
 namespace RequestMonitoring.Tests;
 
