@@ -19,9 +19,9 @@ public class RequestMonitoringAdminPanelApiWrapper(IConfiguration configuration,
         };
     }
 
-    public async Task<DomainDto> CreateDomain(CreateUpdateDomainDto dto) => await _client.DomainsPOSTAsync(dto);
+    public async Task<DomainDto> CreateDomain(DomainCreateUpdateDto dto) => await _client.DomainsPOSTAsync(dto);
 
-    public async Task<QuotaDto> CreateQuota(CreateQuotaDto quota) => await _client.QuotasPOSTAsync(quota);
+    public async Task<QuotaDto> CreateQuota(QuotaCreateUpdateDto quota) => await _client.QuotasPOSTAsync(quota);
 
     public async Task DeleteDomain(int id)
     {
@@ -49,18 +49,19 @@ public class RequestMonitoringAdminPanelApiWrapper(IConfiguration configuration,
 
     public async Task<DomainDto> GetDomain(int id) => await _client.DomainsGETAsync(id);
 
-    public async Task<IEnumerable<DomainDto>> GetDomainList() => await _client.DomainsAllAsync();
+    public async Task<IReadOnlyList<DomainDto>> GetDomainList() => (await _client.DomainsAllAsync()).ToList();
 
-    public async Task<IEnumerable<DomainStatusTypeDto>> GetDomainStatusTypes() => await _client.DomainStatusTypesAsync();
+    public async Task<IReadOnlyList<DomainStatusTypeDto>> GetDomainStatusTypes() => (await _client.DomainStatusTypesAsync()).ToList();
+
     public async Task<QuotaDto> GetQuota(int id) => await _client.GetQuotaByIdAsync(id);
 
     public Task<QuotaDto> GetQuotaByDomainId(int id) => _client.GetQuotaByDomainIdAsync(id);
 
-    public async Task<IEnumerable<QuotaDto>> GetQuotaList() => await _client.QuotasAllAsync();
+    public async Task<IReadOnlyList<QuotaDto>> GetQuotaList() => (await _client.QuotasAllAsync()).ToList();
 
     public async Task<QuotaDto> ResetCounter(int id) => await _client.ResetCounterAsync(id);
 
-    public async Task<DomainDto> UpdateDomain(int id, CreateUpdateDomainDto dto) => await _client.DomainsPUTAsync(id, dto);
+    public async Task<DomainDto> UpdateDomain(int id, DomainCreateUpdateDto dto) => await _client.DomainsPUTAsync(id, dto);
 
-    public async Task<QuotaDto> UpdateQuota(int id, UpdateQuotaDto quota) => await _client.QuotasPUTAsync(id, quota);
+    public async Task<QuotaDto> UpdateQuota(int id, QuotaCreateUpdateDto quota) => await _client.QuotasPUTAsync(id, quota);
 }

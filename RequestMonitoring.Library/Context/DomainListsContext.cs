@@ -1,10 +1,14 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using RequestMonitoring.Library.Enitites;
 
 namespace RequestMonitoring.Library.Context;
 
-public class DomainListsContext(DbContextOptions<DomainListsContext> options) : DbContext(options)
+public class DomainListsContext : DbContext
 {
+    [SetsRequiredMembers]
+    public DomainListsContext(DbContextOptions<DomainListsContext> options) : base(options) { }
+
     public required DbSet<Domain> Domains { get; set; }
     public required DbSet<DomainStatusType> DomainStatusTypes { get; set; }
     public required DbSet<Quota> Quotas { get; set; }

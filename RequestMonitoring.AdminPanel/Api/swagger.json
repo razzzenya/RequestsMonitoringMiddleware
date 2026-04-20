@@ -58,17 +58,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateUpdateDomainDto"
+                "$ref": "#/components/schemas/DomainCreateUpdateDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateUpdateDomainDto"
+                "$ref": "#/components/schemas/DomainCreateUpdateDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateUpdateDomainDto"
+                "$ref": "#/components/schemas/DomainCreateUpdateDto"
               }
             }
           },
@@ -230,17 +230,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateUpdateDomainDto"
+                "$ref": "#/components/schemas/DomainCreateUpdateDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateUpdateDomainDto"
+                "$ref": "#/components/schemas/DomainCreateUpdateDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateUpdateDomainDto"
+                "$ref": "#/components/schemas/DomainCreateUpdateDto"
               }
             }
           },
@@ -485,17 +485,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateQuotaDto"
+                "$ref": "#/components/schemas/QuotaCreateUpdateDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateQuotaDto"
+                "$ref": "#/components/schemas/QuotaCreateUpdateDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateQuotaDto"
+                "$ref": "#/components/schemas/QuotaCreateUpdateDto"
               }
             }
           },
@@ -658,17 +658,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateQuotaDto"
+                "$ref": "#/components/schemas/QuotaCreateUpdateDto"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateQuotaDto"
+                "$ref": "#/components/schemas/QuotaCreateUpdateDto"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateQuotaDto"
+                "$ref": "#/components/schemas/QuotaCreateUpdateDto"
               }
             }
           },
@@ -907,74 +907,6 @@
   },
   "components": {
     "schemas": {
-      "CreateQuotaDto": {
-        "required": [
-          "domainId",
-          "type",
-          "maxRequests",
-          "periodSeconds",
-          "expiresAt"
-        ],
-        "type": "object",
-        "properties": {
-          "domainId": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "type": {
-            "$ref": "#/components/schemas/QuotaType"
-          },
-          "maxRequests": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "null",
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "periodSeconds": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "null",
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          },
-          "expiresAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          }
-        }
-      },
-      "CreateUpdateDomainDto": {
-        "required": [
-          "host",
-          "domainStatusTypeId"
-        ],
-        "type": "object",
-        "properties": {
-          "host": {
-            "type": "string"
-          },
-          "domainStatusTypeId": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
-            "format": "int32"
-          }
-        }
-      },
       "DomainDto": {
         "required": [
           "id",
@@ -1143,15 +1075,38 @@
       "QuotaType": {
         "type": "integer"
       },
-      "UpdateQuotaDto": {
+      "DomainCreateUpdateDto": {
         "required": [
-          "type",
-          "maxRequests",
-          "periodSeconds",
-          "expiresAt"
+          "host",
+          "domainStatusTypeId"
         ],
         "type": "object",
         "properties": {
+          "host": {
+            "type": "string"
+          },
+          "domainStatusTypeId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "QuotaCreateUpdateDto": {
+        "type": "object",
+        "properties": {
+          "domainId": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string",
+              "null"
+            ],
+            "format": "int32"
+          },
           "type": {
             "$ref": "#/components/schemas/QuotaType"
           },

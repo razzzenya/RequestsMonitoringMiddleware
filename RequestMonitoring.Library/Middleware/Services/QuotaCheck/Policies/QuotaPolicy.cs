@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Caching.Distributed;
 using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites;
+using StackExchange.Redis;
 
 namespace RequestMonitoring.Library.Middleware.Services.QuotaCheck.Policies;
 
@@ -12,7 +12,7 @@ public abstract class QuotaPolicy
     /// <summary>
     /// Инкрементирует счётчик и проверяет квоту
     /// </summary>
-    public abstract Task<QuotaCheckResult> ExecuteAsync(Quota quota, IDistributedCache cache, DomainListsContext dbContext, int syncEveryNRequests);
+    public abstract Task<QuotaCheckResult> ExecuteAsync(Quota quota, IDatabase db, DomainListsContext dbContext, int syncEveryNRequests);
 
     /// <summary>
     /// Создаёт политику по типу квоты
@@ -30,15 +30,19 @@ public abstract class QuotaPolicy
 
     protected static string GetCacheKey(Quota quota) => $"Quota_{quota.DomainId}";
 
-    protected static async Task<long> IncrementInRedisAsync(Quota quota, IDistributedCache cache, DistributedCacheEntryOptions options)
+    protected static async Task<long> IncrementInRedisAsync(Quota quota, IDatabase db)
     {
         var cacheKey = GetCacheKey(quota);
-        var cachedValue = await cache.GetStringAsync(cacheKey);
 
-        var count = cachedValue is null ? quota.RequestCount + 1 : long.Parse(cachedValue) + 1;
+        // Seed the key from DB if it doesn't exist (e.g. after Redis restart)
+        await db.StringSetAsync(cacheKey, quota.RequestCount, when: When.NotExists);
 
-        await cache.SetStringAsync(cacheKey, count.ToString(), options);
-        return count;
+        return await db.StringIncrementAsync(cacheKey);
+    }
+
+    protected static async Task DeleteCacheKeyAsync(Quota quota, IDatabase db)
+    {
+        await db.KeyDeleteAsync(GetCacheKey(quota));
     }
 
     protected static async Task SaveCounterAsync(Quota quota, DomainListsContext dbContext, long count, int syncEveryNRequests)

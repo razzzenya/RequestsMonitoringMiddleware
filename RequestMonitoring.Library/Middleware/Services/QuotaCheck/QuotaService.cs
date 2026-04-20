@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites;
 using RequestMonitoring.Library.Middleware.Services.DomainCache;
 using RequestMonitoring.Library.Middleware.Services.QuotaCheck.Policies;
+using StackExchange.Redis;
 
 namespace RequestMonitoring.Library.Middleware.Services.QuotaCheck;
 
-public class QuotaService(IDistributedCache cache, DomainListsContext dbContext, IConfiguration configuration, IDomainCacheService domainCacheService, ILogger<QuotaService> logger) : IQuotaService
+public class QuotaService(IConnectionMultiplexer redis, DomainListsContext dbContext, IConfiguration configuration, IDomainCacheService domainCacheService, ILogger<QuotaService> logger) : IQuotaService
 {
     private readonly int _syncEveryNRequests = configuration.GetValue("QuotaSettings:SyncEveryNRequests", 10);
 
@@ -22,8 +22,9 @@ public class QuotaService(IDistributedCache cache, DomainListsContext dbContext,
         if (quota is null)
             return QuotaCheckResult.NoQuota;
 
+        var db = redis.GetDatabase();
         var policy = QuotaPolicy.Create(quota.Type);
-        var result = await policy.ExecuteAsync(quota, cache, dbContext, _syncEveryNRequests);
+        var result = await policy.ExecuteAsync(quota, db, dbContext, _syncEveryNRequests);
 
         if (result == QuotaCheckResult.Exceeded)
         {

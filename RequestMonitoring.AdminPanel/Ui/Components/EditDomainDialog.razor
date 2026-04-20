@@ -15,7 +15,7 @@
                           Required="true"
                           RequiredError="Укажите название домена" />
             <MudSelect T="int" @bind-Value="domainStatusTypeId" Label="Статус" Required="true" RequiredError="Укажите статус домена">
-                @foreach (var (id, name) in StatusOptions)
+                @foreach (var (id, name) in DomainStatusHelper.StatusOptions)
                 {
                     <MudSelectItem Value="@id">@name</MudSelectItem>
                 }
@@ -46,13 +46,6 @@
     private int domainStatusTypeId;
     private string? errorMessage;
 
-    private static readonly (int Id, string Name)[] StatusOptions =
-    [
-        (1, "Белый список"),
-        (2, "Серый список"),
-        (3, "Неавторизован")
-    ];
-
     protected override void OnInitialized()
     {
         host = Host;
@@ -69,7 +62,7 @@
 
         errorMessage = null;
 
-        var dto = new CreateUpdateDomainDto
+        var dto = new DomainCreateUpdateDto
         {
             Host = host,
             DomainStatusTypeId = domainStatusTypeId

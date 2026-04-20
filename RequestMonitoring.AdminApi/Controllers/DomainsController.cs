@@ -19,9 +19,9 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
     /// Получить список всех доменов
     /// </summary>
     [HttpGet]
-    [ProducesResponseType<IEnumerable<DomainDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<IReadOnlyList<DomainDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<DomainDto>>> GetAllAsync()
+    public async Task<ActionResult<IReadOnlyList<DomainDto>>> GetAllAsync()
     {
         try
         {
@@ -29,7 +29,7 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
                 .Include(d => d.DomainStatusType)
                 .ToListAsync();
 
-            return Ok(domains.Adapt<IEnumerable<DomainDto>>());
+            return Ok(domains.Adapt<IReadOnlyList<DomainDto>>());
         }
         catch (Exception ex)
         {
@@ -75,7 +75,7 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<DomainDto>> CreateAsync([FromBody] CreateUpdateDomainDto dto)
+    public async Task<ActionResult<DomainDto>> CreateAsync([FromBody] DomainCreateUpdateDto dto)
     {
         try
         {
@@ -120,7 +120,7 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<DomainDto>> UpdateAsync(int id, [FromBody] CreateUpdateDomainDto dto)
+    public async Task<ActionResult<DomainDto>> UpdateAsync(int id, [FromBody] DomainCreateUpdateDto dto)
     {
         try
         {

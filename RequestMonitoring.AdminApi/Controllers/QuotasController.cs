@@ -19,14 +19,14 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
     /// Получить список всех квот
     /// </summary>
     [HttpGet]
-    [ProducesResponseType<IEnumerable<QuotaDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<IReadOnlyList<QuotaDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<QuotaDto>>> GetAllAsync()
+    public async Task<ActionResult<IReadOnlyList<QuotaDto>>> GetAllAsync()
     {
         try
         {
             var quotas = await context.Quotas.ToListAsync();
-            return Ok(quotas.Adapt<IEnumerable<QuotaDto>>());
+            return Ok(quotas.Adapt<IReadOnlyList<QuotaDto>>());
         }
         catch (Exception ex)
         {
@@ -96,10 +96,13 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<QuotaDto>> CreateAsync([FromBody] CreateQuotaDto dto)
+    public async Task<ActionResult<QuotaDto>> CreateAsync([FromBody] QuotaCreateUpdateDto dto)
     {
         try
         {
+            if (dto.DomainId is null)
+                return BadRequest(new { message = "DomainId is required for creating a quota" });
+
             var domainExists = await context.Domains.AnyAsync(d => d.Id == dto.DomainId);
             if (!domainExists)
                 return BadRequest(new { message = "Domain not found" });
@@ -113,7 +116,7 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
             var quota = new Quota
             {
                 Id = 0,
-                DomainId = dto.DomainId,
+                DomainId = dto.DomainId.Value,
                 Domain = domain!,
                 Type = dto.Type,
                 MaxRequests = dto.MaxRequests,
@@ -146,7 +149,7 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
     [ProducesResponseType<QuotaDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<QuotaDto>> UpdateAsync(int id, [FromBody] UpdateQuotaDto dto)
+    public async Task<ActionResult<QuotaDto>> UpdateAsync(int id, [FromBody] QuotaCreateUpdateDto dto)
     {
         try
         {
