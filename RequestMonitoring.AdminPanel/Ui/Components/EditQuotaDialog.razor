@@ -13,7 +13,7 @@
             <MudSelect T="QuotaType" @bind-Value="type" Label="Тип квоты" Required="true" RequiredError="Укажите тип квоты">
                 @foreach (var t in Enum.GetValues<QuotaType>())
                 {
-                    <MudSelectItem Value="t">@QuotaTypeHelper.GetDisplayName(t)</MudSelectItem>
+                    <MudSelectItem Value="@t">@QuotaTypeHelper.GetDisplayName(t)</MudSelectItem>
                 }
             </MudSelect>
             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2">@QuotaTypeHelper.GetDescription(type)</MudText>
