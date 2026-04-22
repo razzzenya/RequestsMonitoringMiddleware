@@ -1,4 +1,4 @@
-using RequestMonitoring.Library.Enitites;
+using RequestMonitoring.Library.Shared;
 
 namespace RequestMonitoring.AdminApi.DTO;
 

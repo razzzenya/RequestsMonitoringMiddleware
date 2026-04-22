@@ -1,3 +1,5 @@
+using RequestMonitoring.Library.Shared;
+
 namespace RequestMonitoring.AdminPanel.Models;
 
 public static class QuotaTypeHelper

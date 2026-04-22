@@ -30,5 +30,9 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RequestMonitoring.Library.Shared\RequestMonitoring.Library.Shared.csproj" />
+  </ItemGroup>
+
 
 </Project>

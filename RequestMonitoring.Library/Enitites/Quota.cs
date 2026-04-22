@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using RequestMonitoring.Library.Shared;
 
 namespace RequestMonitoring.Library.Enitites;
 

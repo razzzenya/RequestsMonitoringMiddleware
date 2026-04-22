@@ -1,5 +1,6 @@
 using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites;
+using RequestMonitoring.Library.Shared;
 using StackExchange.Redis;
 
 namespace RequestMonitoring.Library.Middleware.Services.QuotaCheck.Policies;

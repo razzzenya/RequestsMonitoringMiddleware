@@ -13,4 +13,5 @@
     <Project Path="RequestMonitoring.Test.Api/RequestMonitoring.Test.Api.csproj" />
     <Project Path="RequestMonitoring.Tests/RequestMonitoring.Tests.csproj" Id="16808594-8fce-48c3-aa42-018033001de2" />
   </Folder>
+  <Project Path="RequestMonitoring.Library.Shared/RequestMonitoring.Library.Shared.csproj" Id="6554f61d-e92c-4fa6-b0b1-7511942395be" />
 </Solution>
