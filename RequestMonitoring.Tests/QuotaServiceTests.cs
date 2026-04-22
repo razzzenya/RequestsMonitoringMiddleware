@@ -127,7 +127,7 @@ public class QuotaServiceTests
 
         Assert.Equal(QuotaCheckResult.Exceeded, result);
 
-        var updatedDomain = await ctx.Domains.FindAsync(domain.Id, TestContext.Current.CancellationToken);
+        var updatedDomain = await ctx.Domains.FindAsync([domain.Id, TestContext.Current.CancellationToken], TestContext.Current.CancellationToken);
         Assert.Equal(2, updatedDomain!.DomainStatusTypeId);
     }
 
@@ -190,7 +190,7 @@ public class QuotaServiceTests
 
         Assert.Equal(QuotaCheckResult.TemporarilyExceeded, result);
 
-        var updatedDomain = await ctx.Domains.FindAsync(domain.Id, TestContext.Current.CancellationToken);
+        var updatedDomain = await ctx.Domains.FindAsync([domain.Id, TestContext.Current.CancellationToken], TestContext.Current.CancellationToken);
         Assert.Equal(1, updatedDomain!.DomainStatusTypeId);
     }
 
