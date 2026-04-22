@@ -6,6 +6,7 @@ using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites;
 using RequestMonitoring.Library.Middleware.Services.DomainCache;
 using RequestMonitoring.Library.Middleware.Services.QuotaCheck;
+using RequestMonitoring.Library.Shared;
 using StackExchange.Redis;
 
 namespace RequestMonitoring.Tests;
@@ -125,6 +126,9 @@ public class QuotaServiceTests
         var result = await service.CheckAndIncrementAsync("example.com");
 
         Assert.Equal(QuotaCheckResult.Exceeded, result);
+
+        var updatedDomain = await ctx.Domains.FindAsync(domain.Id, TestContext.Current.CancellationToken);
+        Assert.Equal(2, updatedDomain!.DomainStatusTypeId);
     }
 
     [Fact]
@@ -185,6 +189,9 @@ public class QuotaServiceTests
         var result = await service.CheckAndIncrementAsync("example.com");
 
         Assert.Equal(QuotaCheckResult.TemporarilyExceeded, result);
+
+        var updatedDomain = await ctx.Domains.FindAsync(domain.Id, TestContext.Current.CancellationToken);
+        Assert.Equal(1, updatedDomain!.DomainStatusTypeId);
     }
 
     [Fact]
@@ -225,7 +232,7 @@ public class QuotaServiceTests
         // DB counter must have been reset (well below the original 50) before the new increment
         var updatedQuota = await ctx.Quotas
             .FirstOrDefaultAsync(q => q.Id == quota.Id, TestContext.Current.CancellationToken);
-        Assert.True(updatedQuota!.RequestCount < quota.MaxRequests, "Counter should have been reset for new period");
+        Assert.Equal(1, updatedQuota!.RequestCount);
     }
 
     [Fact]

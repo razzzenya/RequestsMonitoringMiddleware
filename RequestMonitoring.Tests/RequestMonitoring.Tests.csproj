@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RequestMonitoring.AppHost\RequestMonitoring.AppHost.csproj" />
+    <ProjectReference Include="..\RequestMonitoring.Library.Shared\RequestMonitoring.Library.Shared.csproj" />
     <ProjectReference Include="..\RequestMonitoring.Library\RequestMonitoring.Library.csproj" />
   </ItemGroup>
 

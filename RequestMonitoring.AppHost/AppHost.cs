@@ -19,7 +19,7 @@ var api = builder.AddProject<Projects.RequestMonitoring_Test_Api>("api")
     .WaitFor(openSearch)
     .WaitFor(redis)
     .WithReference(redis)
-    .WithEnvironment("OpenSearch__Uri", "http://localhost:9200")
+    .WithEnvironment("OpenSearch__Uri", openSearch.GetEndpoint("http"))
     .WithEnvironment("OpenSearch__Index", "request-logs");
 
 var adminApi = builder.AddProject<Projects.RequestMonitoring_AdminApi>("adminapi")

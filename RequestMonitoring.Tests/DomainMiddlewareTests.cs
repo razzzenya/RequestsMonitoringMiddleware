@@ -39,9 +39,9 @@ public class DomainMiddlewareTests
 
         var results = await Task.WhenAll(tasks);
 
-        foreach (var result in results)
+        foreach (var (domain, expected, actual) in results)
         {
-            Assert.Equal(result.expected, result.actual);
+            Assert.Equal(expected, actual);
         }
     }
 }
