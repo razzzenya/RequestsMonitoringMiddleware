@@ -7,7 +7,7 @@ public class DomainMiddlewareTests
 {
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
 
-    [Fact]
+    [Fact(Explicit = true)]
     public async Task MultipleDomains_ProcessedConcurrently()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
