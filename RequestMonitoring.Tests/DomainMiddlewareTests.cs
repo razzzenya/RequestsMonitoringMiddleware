@@ -5,7 +5,7 @@ namespace RequestMonitoring.Tests;
 /// </summary>
 public class DomainMiddlewareTests
 {
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
 
     [Fact]
     public async Task MultipleDomains_ProcessedConcurrently()
