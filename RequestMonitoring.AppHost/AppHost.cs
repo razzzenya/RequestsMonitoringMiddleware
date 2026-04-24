@@ -19,7 +19,15 @@ var api = builder.AddProject<Projects.RequestMonitoring_Test_Api>("api")
     .WaitFor(openSearch)
     .WaitFor(redis)
     .WithReference(redis)
-    .WithEnvironment("OpenSearch__Uri", "http://localhost:9200")
+    .WithEnvironment("OpenSearch__Uri", openSearch.GetEndpoint("http"))
     .WithEnvironment("OpenSearch__Index", "request-logs");
+
+var adminApi = builder.AddProject<Projects.RequestMonitoring_AdminApi>("adminapi")
+    .WaitFor(redis)
+    .WithReference(redis)
+    .WithUrlForEndpoint("https", url => url.Url = url.Url.Replace("/swagger", "") + "/scalar/v1");
+
+var adminPanel = builder.AddProject<Projects.RequestMonitoring_AdminPanel>("adminpanel")
+    .WaitFor(adminApi);
 
 builder.Build().Run();

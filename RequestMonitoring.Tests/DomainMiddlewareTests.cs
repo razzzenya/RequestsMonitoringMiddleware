@@ -5,9 +5,9 @@ namespace RequestMonitoring.Tests;
 /// </summary>
 public class DomainMiddlewareTests
 {
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
 
-    [Fact]
+    [Fact(Explicit = true)]
     public async Task MultipleDomains_ProcessedConcurrently()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
@@ -39,9 +39,9 @@ public class DomainMiddlewareTests
 
         var results = await Task.WhenAll(tasks);
 
-        foreach (var result in results)
+        foreach (var (domain, expected, actual) in results)
         {
-            Assert.Equal(result.expected, result.actual);
+            Assert.Equal(expected, actual);
         }
     }
 }

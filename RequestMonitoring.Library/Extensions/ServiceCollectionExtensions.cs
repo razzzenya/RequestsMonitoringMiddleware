@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OpenSearch.Client;
-using RequestMonitoring.Library.Enitites.Domain;
+using RequestMonitoring.Library.Enitites;
 
 namespace RequestMonitoring.Library.Extensions;
 
@@ -27,13 +27,12 @@ public static class ServiceCollectionExtensions
                 var uri = new Uri(uriString);
 
                 var settings = new ConnectionSettings(uri)
-                    .DefaultIndex(index)
-                    .ThrowExceptions();
+                    .DefaultIndex(index);
 
                 var client = new OpenSearchClient(settings);
 
                 var existsResp = client.Indices.Exists(index);
-                if (!existsResp.Exists)
+                if (existsResp.IsValid && !existsResp.Exists)
                 {
                     client.Indices.Create(index, c => c
                         .Map<RequestLog>(m => m

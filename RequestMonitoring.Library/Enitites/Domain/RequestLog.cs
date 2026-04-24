@@ -1,4 +1,4 @@
-namespace RequestMonitoring.Library.Enitites.Domain;
+namespace RequestMonitoring.Library.Enitites;
 
 /// <summary>
 /// Модель лога HTTP-запроса
@@ -33,7 +33,7 @@ public class RequestLog
     /// <summary>
     /// Заголовки HTTP-запроса
     /// </summary>
-    public Dictionary<string, string> Headers { get; set; } = new();
+    public Dictionary<string, string> Headers { get; set; } = [];
 
     /// <summary>
     /// IP-адрес клиента

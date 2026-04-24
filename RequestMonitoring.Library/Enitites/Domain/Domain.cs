@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace RequestMonitoring.Library.Enitites.Domain;
+namespace RequestMonitoring.Library.Enitites;
 
 /// <summary>
 /// Сущность, представляющая домен

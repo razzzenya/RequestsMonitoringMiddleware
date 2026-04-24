@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Http;
-using RequestMonitoring.Library.Enitites.Domain;
+using RequestMonitoring.Library.Enitites;
 
 namespace RequestMonitoring.Library.Middleware.Services.DomainCheck;
 

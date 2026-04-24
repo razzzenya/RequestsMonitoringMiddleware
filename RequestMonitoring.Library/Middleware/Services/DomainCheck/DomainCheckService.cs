@@ -4,7 +4,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RequestMonitoring.Library.Context;
-using RequestMonitoring.Library.Enitites.Domain;
+using RequestMonitoring.Library.Enitites;
 using System.Text.Json;
 
 namespace RequestMonitoring.Library.Middleware.Services.DomainCheck;
@@ -31,7 +31,7 @@ public class DomainCheckService(IConfiguration configuration, IDistributedCache 
                 var deserializedStatus = JsonSerializer.Deserialize<DomainStatusType>(cachedData);
                 if (deserializedStatus != null)
                 {
-                    logger.LogDebug("Domain {Domain} status loaded from cache", domain);
+                    logger.LogInformation("Domain {Domain} status loaded from cache: {Status}", domain, deserializedStatus.Name);
                     return deserializedStatus;
                 }
             }
@@ -41,6 +41,7 @@ public class DomainCheckService(IConfiguration configuration, IDistributedCache 
             logger.LogWarning(ex, "Failed to read from cache for domain {Domain}. Falling back to database", domain);
         }
 
+        logger.LogInformation("Cache miss for domain {Domain}, querying database", domain);
         var domainStatus = await GetDomainStatusFromDatabaseAsync(domain);
 
         await TryCacheResultAsync(cacheKey, domainStatus);
@@ -59,12 +60,12 @@ public class DomainCheckService(IConfiguration configuration, IDistributedCache 
 
         if (domainEntity?.DomainStatusType != null)
         {
-            logger.LogDebug("Domain {Domain} found in database with status {Status}",
+            logger.LogInformation("Domain {Domain} found in database with status {Status}",
                 domain, domainEntity.DomainStatusType.Name);
             return domainEntity.DomainStatusType;
         }
 
-        logger.LogDebug("Domain {Domain} not found in database. Returning blocked status", domain);
+        logger.LogWarning("Domain {Domain} not found in database. Returning blocked status", domain);
         return await dbcontext.DomainStatusTypes.FirstAsync(s => s.Id == 3); ;
     }
 
@@ -82,7 +83,7 @@ public class DomainCheckService(IConfiguration configuration, IDistributedCache 
             };
 
             await cache.SetStringAsync(cacheKey, serializedData, cacheOptions);
-            logger.LogDebug("Cached domain status with key {CacheKey} for {Minutes} minutes",
+            logger.LogInformation("Cached domain status with key {CacheKey} for {Minutes} minutes",
                 cacheKey, cacheExpirationMinutes);
         }
         catch (Exception ex)

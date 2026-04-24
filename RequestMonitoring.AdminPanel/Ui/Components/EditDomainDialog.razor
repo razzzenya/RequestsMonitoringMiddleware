@@ -1,0 +1,93 @@
+@inject IRequestMonitoringAdminPanelApiWrapper AdminPanelApi
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Редактирование домена</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+        }
+        <MudForm @ref="form">
+            <MudTextField @bind-Value="host"
+                          Label="Название домена"
+                          Required="true"
+                          RequiredError="Укажите название домена" />
+            <MudSelect T="int" @bind-Value="domainStatusTypeId" Label="Статус" Required="true" RequiredError="Укажите статус домена">
+                @foreach (var (id, name) in DomainStatusHelper.StatusOptions)
+                {
+                    <MudSelectItem Value="@id">@name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Отмена</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Сохранить</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public int DomainId { get; set; }
+
+    [Parameter]
+    public string Host { get; set; } = string.Empty;
+
+    [Parameter]
+    public int DomainStatusTypeId { get; set; }
+
+    private MudForm form = null!;
+    private string host = string.Empty;
+    private int domainStatusTypeId;
+    private string? errorMessage;
+
+    protected override void OnInitialized()
+    {
+        host = Host;
+        domainStatusTypeId = DomainStatusTypeId;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Submit()
+    {
+        await form.Validate();
+        if (!form.IsValid)
+            return;
+
+        errorMessage = null;
+
+        var dto = new DomainCreateUpdateDto
+        {
+            Host = host,
+            DomainStatusTypeId = domainStatusTypeId
+        };
+
+        try
+        {
+            await AdminPanelApi.UpdateDomain(DomainId, dto);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (ApiException ex) when (ex.StatusCode == 404)
+        {
+            errorMessage = "Домен не найден";
+        }
+        catch (ApiException ex) when (ex.StatusCode == 400)
+        {
+            errorMessage = "Неверный статус домена";
+        }
+        catch (ApiException ex) when (ex.StatusCode == 409)
+        {
+            errorMessage = "Домен с таким названием уже существует";
+        }
+        catch (Exception)
+        {
+            errorMessage = "Произошла ошибка при редактировании домена";
+        }
+    }
+}
