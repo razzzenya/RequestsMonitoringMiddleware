@@ -1,11 +1,8 @@
 name: Unit tests
 
 on:
-  push:
-    branches: [main, master, development]
   pull_request:
     branches: [main, master, development]
-  workflow_dispatch:
 
 jobs:
   unit-tests:
@@ -32,5 +29,4 @@ jobs:
           dotnet test RequestMonitoring.Tests/RequestMonitoring.Tests.csproj
           --configuration Release
           --no-build
-          --filter "FullyQualifiedName~QuotaServiceTests"
           --logger "console;verbosity=normal"
