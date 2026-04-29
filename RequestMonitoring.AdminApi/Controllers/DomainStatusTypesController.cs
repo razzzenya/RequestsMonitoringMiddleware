@@ -1,4 +1,5 @@
 using Mapster;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RequestMonitoring.AdminApi.DTO;
@@ -11,6 +12,7 @@ namespace RequestMonitoring.AdminApi.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class DomainStatusTypesController(DomainListsContext context, ILogger<DomainStatusTypesController> logger) : ControllerBase
 {
     /// <summary>

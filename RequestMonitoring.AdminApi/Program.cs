@@ -38,6 +38,19 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddAuthentication("Cookies")
+    .AddCookie("Cookies", options =>
+    {
+        options.LoginPath = null;
+        options.Events.OnRedirectToLogin = ctx =>
+        {
+            ctx.Response.StatusCode = 401;
+            return Task.CompletedTask;
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddOpenApi();
 
 builder.Services.AddHttpClient();
@@ -51,6 +64,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAdminPanel");
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseHttpsRedirection();
 app.MapControllers();
 

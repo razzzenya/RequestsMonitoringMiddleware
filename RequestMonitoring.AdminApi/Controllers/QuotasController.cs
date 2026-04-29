@@ -1,4 +1,5 @@
 using Mapster;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RequestMonitoring.AdminApi.DTO;
@@ -13,6 +14,7 @@ namespace RequestMonitoring.AdminApi.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class QuotasController(DomainListsContext context, IQuotaCacheService cacheService, ILogger<QuotasController> logger) : ControllerBase
 {
     /// <summary>
