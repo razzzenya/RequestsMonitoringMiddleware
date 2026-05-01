@@ -2,6 +2,8 @@
 
 public interface IRequestMonitoringAdminPanelApiWrapper
 {
+    public Task<bool> LoginAsync(string login, string password);
+    public Task LogoutAsync();
     public Task<IReadOnlyList<DomainDto>> GetDomainList();
     public Task<DomainDto> GetDomain(int id);
     public Task<DomainDto> CreateDomain(DomainCreateUpdateDto dto);

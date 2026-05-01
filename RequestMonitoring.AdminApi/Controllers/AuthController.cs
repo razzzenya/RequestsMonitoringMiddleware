@@ -28,4 +28,11 @@ public class AuthController(IConfiguration configuration) : ControllerBase
         return Ok();
     }
 
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        await HttpContext.SignOutAsync("Cookies");
+        return Ok();
+    }
+
 }

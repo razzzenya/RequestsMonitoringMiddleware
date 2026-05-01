@@ -1,7 +1,8 @@
 ﻿@page "/"
+@page "/domains"
+@attribute [Authorize]
 @using RequestMonitoring.AdminPanel.Ui.Components
 
-@page "/domains"
 <PageTitle>Админ панель</PageTitle>
 
 <DomainsDataGrid/>

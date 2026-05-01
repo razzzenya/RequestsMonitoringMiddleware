@@ -12,11 +12,36 @@ public class RequestMonitoringAdminPanelApiWrapper(IConfiguration configuration,
             ?? "https://localhost:7213";
 
         httpClient.BaseAddress = new Uri(baseUrl);
+        httpClient.DefaultRequestHeaders.Add("X-Requested-With", "XMLHttpRequest");
 
         return new RequestMonitoringAdminPanelApi(httpClient)
         {
             ReadResponseAsString = true
         };
+    }
+
+    public async Task<bool> LoginAsync(string login, string password)
+    {
+        try
+        {
+            await _client.LoginAsync(new LoginDto { Login = login, Password = password });
+            return true;
+        }
+        catch (ApiException ex) when (ex.StatusCode == 401)
+        {
+            return false;
+        }
+    }
+
+    public async Task LogoutAsync()
+    {
+        try
+        {
+            await _client.LogoutAsync();
+        }
+        catch (ApiException ex) when (ex.StatusCode == 200)
+        {
+        }
     }
 
     public async Task<DomainDto> CreateDomain(DomainCreateUpdateDto dto) => await _client.DomainsPOSTAsync(dto);
