@@ -76,6 +76,12 @@ public class RequestMonitoringAdminPanelApiWrapper(IConfiguration configuration,
 
     public async Task<IReadOnlyList<DomainDto>> GetDomainList() => (IReadOnlyList<DomainDto>)await _client.DomainsAllAsync();
 
+    public async Task<PagedResultOfDomainDto> GetDomainListPagedAsync(int page, int pageSize, string? search = null)
+        => await _client.GetDomainsPagedAsync(page, pageSize, search);
+
+    public async Task<PagedResultOfQuotaDto> GetQuotaListPagedAsync(int page, int pageSize, int? domainId = null)
+        => await _client.GetQuotasPagedAsync(page, pageSize, domainId);
+
     public async Task<IReadOnlyList<DomainStatusTypeDto>> GetDomainStatusTypes() => (IReadOnlyList<DomainStatusTypeDto>)await _client.DomainStatusTypesAsync();
 
     public async Task<QuotaDto> GetQuota(int id) => await _client.GetQuotaByIdAsync(id);

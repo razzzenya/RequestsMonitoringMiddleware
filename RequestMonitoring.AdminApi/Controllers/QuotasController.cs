@@ -38,6 +38,45 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
     }
 
     /// <summary>
+    /// Получить страницу квот с фильтрацией
+    /// </summary>
+    /// <param name="page">Номер страницы (начиная с 1)</param>
+    /// <param name="pageSize">Размер страницы</param>
+    /// <param name="domainId">Фильтр по ID домена</param>
+    [HttpGet("paged")]
+    [EndpointName("GetQuotasPaged")]
+    [ProducesResponseType<PagedResult<QuotaDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<PagedResult<QuotaDto>>> GetPagedAsync(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] int? domainId = null)
+    {
+        try
+        {
+            var query = context.Quotas.AsQueryable();
+
+            if (domainId.HasValue)
+                query = query.Where(q => q.DomainId == domainId.Value);
+
+            var totalCount = await query.CountAsync();
+
+            var quotas = await query
+                .OrderBy(q => q.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(new PagedResult<QuotaDto>(quotas.Adapt<IReadOnlyList<QuotaDto>>(), totalCount, page, pageSize));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting paged quotas");
+            return StatusCode(500, new { message = "Error retrieving quotas" });
+        }
+    }
+
+    /// <summary>
     /// Получить квоту по идентификатору
     /// </summary>
     /// <param name="id">Идентификатор квоты</param>
