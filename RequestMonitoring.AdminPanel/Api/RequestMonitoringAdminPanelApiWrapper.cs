@@ -12,7 +12,7 @@ public class RequestMonitoringAdminPanelApiWrapper(IConfiguration configuration,
             ?? "https://localhost:7213";
 
         httpClient.BaseAddress = new Uri(baseUrl);
-        httpClient.DefaultRequestHeaders.Add("X-Requested-With", "XMLHttpRequest");
+        httpClient.DefaultRequestHeaders.TryAddWithoutValidation("X-Requested-With", "XMLHttpRequest");
 
         return new RequestMonitoringAdminPanelApi(httpClient)
         {
@@ -33,14 +33,18 @@ public class RequestMonitoringAdminPanelApiWrapper(IConfiguration configuration,
         }
     }
 
-    public async Task LogoutAsync()
+    public async Task LogoutAsync() => await _client.LogoutAsync();
+
+    public async Task<bool> CheckAuthAsync()
     {
         try
         {
-            await _client.LogoutAsync();
+            await _client.MeAsync();
+            return true;
         }
-        catch (ApiException ex) when (ex.StatusCode == 200)
+        catch (ApiException ex) when (ex.StatusCode == 401 || ex.StatusCode == 403)
         {
+            return false;
         }
     }
 

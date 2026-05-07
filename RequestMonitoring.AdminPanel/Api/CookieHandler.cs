@@ -1,12 +1,22 @@
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Http;
 
 namespace RequestMonitoring.AdminPanel.Api;
 
-public class CookieHandler : DelegatingHandler
+public class CookieHandler(CookieAuthStateProvider authStateProvider) : DelegatingHandler
 {
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
-        return base.SendAsync(request, cancellationToken);
+
+        var response = await base.SendAsync(request, cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized
+            || response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            authStateProvider.NotifyLogout();
+        }
+
+        return response;
     }
 }

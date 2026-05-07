@@ -12,16 +12,9 @@ public class CookieAuthStateProvider(IRequestMonitoringAdminPanelApiWrapper api)
         if (_isAuthenticated)
             return AuthenticatedState();
 
-        try
-        {
-            await api.GetDomainList();
-            _isAuthenticated = true;
-            return AuthenticatedState();
-        }
-        catch
-        {
-            return AnonymousState();
-        }
+        var isAuthenticated = await api.CheckAuthAsync();
+        _isAuthenticated = isAuthenticated;
+        return isAuthenticated ? AuthenticatedState() : AnonymousState();
     }
 
     public void NotifyLogin()

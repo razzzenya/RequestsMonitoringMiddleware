@@ -52,6 +52,9 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
         [FromQuery] int pageSize = 10,
         [FromQuery] int? domainId = null)
     {
+        if (page < 1 || pageSize < 1 || pageSize > 100)
+            return BadRequest(new { message = "page >= 1, pageSize от 1 до 100" });
+
         try
         {
             var query = context.Quotas.AsQueryable();

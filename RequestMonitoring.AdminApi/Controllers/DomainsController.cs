@@ -55,6 +55,9 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
         [FromQuery] int pageSize = 10,
         [FromQuery] string? search = null)
     {
+        if (page < 1 || pageSize < 1 || pageSize > 100)
+            return BadRequest(new { message = "page >= 1, pageSize от 1 до 100" });
+
         try
         {
             var query = context.Domains

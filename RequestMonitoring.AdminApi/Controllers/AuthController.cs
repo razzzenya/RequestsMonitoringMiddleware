@@ -8,10 +8,10 @@ namespace RequestMonitoring.AdminApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[AllowAnonymous]
 public class AuthController(IConfiguration configuration) : ControllerBase
 {
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
         var login = configuration["AdminApi:Login"];
@@ -27,6 +27,10 @@ public class AuthController(IConfiguration configuration) : ControllerBase
 
         return Ok();
     }
+
+    [HttpGet("me")]
+    [Authorize]
+    public IActionResult Me() => Ok();
 
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()

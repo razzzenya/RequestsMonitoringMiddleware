@@ -4,6 +4,7 @@ public interface IRequestMonitoringAdminPanelApiWrapper
 {
     public Task<bool> LoginAsync(string login, string password);
     public Task LogoutAsync();
+    public Task<bool> CheckAuthAsync();
     public Task<PagedResultOfDomainDto> GetDomainListPagedAsync(int page, int pageSize, string? search = null);
     public Task<PagedResultOfQuotaDto> GetQuotaListPagedAsync(int page, int pageSize, int? domainId = null);
     public Task<IReadOnlyList<DomainDto>> GetDomainList();
