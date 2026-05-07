@@ -1,4 +1,5 @@
 using Mapster;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RequestMonitoring.AdminApi.DTO;
@@ -13,6 +14,7 @@ namespace RequestMonitoring.AdminApi.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class QuotasController(DomainListsContext context, IQuotaCacheService cacheService, ILogger<QuotasController> logger) : ControllerBase
 {
     /// <summary>
@@ -31,6 +33,48 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
         catch (Exception ex)
         {
             logger.LogError(ex, "Error getting all quotas");
+            return StatusCode(500, new { message = "Error retrieving quotas" });
+        }
+    }
+
+    /// <summary>
+    /// Получить страницу квот с фильтрацией
+    /// </summary>
+    /// <param name="page">Номер страницы (начиная с 1)</param>
+    /// <param name="pageSize">Размер страницы</param>
+    /// <param name="domainId">Фильтр по ID домена</param>
+    [HttpGet("paged")]
+    [EndpointName("GetQuotasPaged")]
+    [ProducesResponseType<PagedResult<QuotaDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<PagedResult<QuotaDto>>> GetPagedAsync(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] int? domainId = null)
+    {
+        if (page < 1 || pageSize < 1 || pageSize > 100)
+            return BadRequest(new { message = "page >= 1, pageSize от 1 до 100" });
+
+        try
+        {
+            var query = context.Quotas.AsQueryable();
+
+            if (domainId.HasValue)
+                query = query.Where(q => q.DomainId == domainId.Value);
+
+            var totalCount = await query.CountAsync();
+
+            var quotas = await query
+                .OrderBy(q => q.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(new PagedResult<QuotaDto>(quotas.Adapt<IReadOnlyList<QuotaDto>>(), totalCount, page, pageSize));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting paged quotas");
             return StatusCode(500, new { message = "Error retrieving quotas" });
         }
     }

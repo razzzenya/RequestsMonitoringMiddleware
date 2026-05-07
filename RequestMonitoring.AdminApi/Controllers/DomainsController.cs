@@ -1,4 +1,5 @@
 using Mapster;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RequestMonitoring.AdminApi.DTO;
@@ -13,6 +14,7 @@ namespace RequestMonitoring.AdminApi.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class DomainsController(DomainListsContext context, IDomainCacheService cacheService, ILogger<DomainsController> logger) : ControllerBase
 {
     /// <summary>
@@ -34,6 +36,50 @@ public class DomainsController(DomainListsContext context, IDomainCacheService c
         catch (Exception ex)
         {
             logger.LogError(ex, "Error getting all domains");
+            return StatusCode(500, new { message = "Error retrieving domains" });
+        }
+    }
+
+    /// <summary>
+    /// Получить страницу доменов с фильтрацией
+    /// </summary>
+    /// <param name="page">Номер страницы (начиная с 1)</param>
+    /// <param name="pageSize">Размер страницы</param>
+    /// <param name="search">Фильтр по хосту</param>
+    [HttpGet("paged")]
+    [EndpointName("GetDomainsPaged")]
+    [ProducesResponseType<PagedResult<DomainDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<PagedResult<DomainDto>>> GetPagedAsync(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null)
+    {
+        if (page < 1 || pageSize < 1 || pageSize > 100)
+            return BadRequest(new { message = "page >= 1, pageSize от 1 до 100" });
+
+        try
+        {
+            var query = context.Domains
+                .Include(d => d.DomainStatusType)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+                query = query.Where(d => d.Host.Contains(search));
+
+            var totalCount = await query.CountAsync();
+
+            var domains = await query
+                .OrderBy(d => d.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(new PagedResult<DomainDto>(domains.Adapt<IReadOnlyList<DomainDto>>(), totalCount, page, pageSize));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting paged domains");
             return StatusCode(500, new { message = "Error retrieving domains" });
         }
     }

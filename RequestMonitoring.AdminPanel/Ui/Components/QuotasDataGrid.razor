@@ -3,7 +3,7 @@
 @inject ISnackbar Snackbar
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-    <MudText Typo="Typo.h6">Квоты (всего: @Quotas.Count())</MudText>
+    <MudText Typo="Typo.h6">Квоты</MudText>
     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreateModal">
         Создать
     </MudButton>
@@ -11,7 +11,10 @@
 
 <MudCard>
     <MudCardContent>
-        <MudTable Items="Quotas" Striped="true" Hover="true">
+        <MudTextField @bind-Value="_domainIdFilter" Label="Поиск по ID домена" Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true"
+                      DebounceInterval="400" OnDebounceIntervalElapsed="OnSearchChanged" />
+        <MudTable ServerData="LoadServerData" @ref="_table" Striped="true" Hover="true">
             <HeaderContent>
                 <MudTh>Действия</MudTh>
                 <MudTh>Id</MudTh>
@@ -58,12 +61,19 @@
 </MudCard>
 
 @code {
-    private IEnumerable<QuotaDto> Quotas { get; set; } = [];
+    private MudTable<QuotaDto> _table = null!;
+    private string? _domainIdFilter;
 
-    protected override async Task OnInitializedAsync()
+    private async Task<TableData<QuotaDto>> LoadServerData(TableState state, CancellationToken ct)
     {
-        await RefreshQuotasCollection();
-        await base.OnInitializedAsync();
+        int? domainId = int.TryParse(_domainIdFilter, out var parsed) ? parsed : null;
+        var result = await AdminPanelApi.GetQuotaListPagedAsync(state.Page + 1, state.PageSize, domainId);
+        return new TableData<QuotaDto> { Items = result.Items, TotalItems = result.TotalCount };
+    }
+
+    private async Task OnSearchChanged()
+    {
+        await _table.ReloadServerData();
     }
 
     private async Task OpenCreateModal()
@@ -74,9 +84,7 @@
         var result = await dialog.Result;
 
         if (result is not null && !result.Canceled)
-        {
-            await RefreshQuotasCollection();
-        }
+            await _table.ReloadServerData();
     }
 
     private async Task OpenEditModal(QuotaDto quota)
@@ -94,9 +102,7 @@
         var result = await dialog.Result;
 
         if (result is not null && !result.Canceled)
-        {
-            await RefreshQuotasCollection();
-        }
+            await _table.ReloadServerData();
     }
 
     private async Task ResetCounterAsync(QuotaDto quota)
@@ -114,7 +120,7 @@
         {
             await AdminPanelApi.ResetCounter(quota.Id);
             Snackbar.Add("Счётчик успешно сброшен", Severity.Success);
-            await RefreshQuotasCollection();
+            await _table.ReloadServerData();
         }
         catch (ApiException ex) when (ex.StatusCode == 404)
         {
@@ -141,7 +147,7 @@
         {
             await AdminPanelApi.DeleteQuota(quota.Id);
             Snackbar.Add("Квота успешно удалена", Severity.Success);
-            await RefreshQuotasCollection();
+            await _table.ReloadServerData();
         }
         catch (ApiException ex) when (ex.StatusCode == 404)
         {
@@ -151,10 +157,5 @@
         {
             Snackbar.Add("Ошибка при удалении квоты", Severity.Error);
         }
-    }
-
-    private async Task RefreshQuotasCollection()
-    {
-        Quotas = await AdminPanelApi.GetQuotaList();
     }
 }

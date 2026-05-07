@@ -12,11 +12,40 @@ public class RequestMonitoringAdminPanelApiWrapper(IConfiguration configuration,
             ?? "https://localhost:7213";
 
         httpClient.BaseAddress = new Uri(baseUrl);
+        httpClient.DefaultRequestHeaders.TryAddWithoutValidation("X-Requested-With", "XMLHttpRequest");
 
         return new RequestMonitoringAdminPanelApi(httpClient)
         {
             ReadResponseAsString = true
         };
+    }
+
+    public async Task<bool> LoginAsync(string login, string password)
+    {
+        try
+        {
+            await _client.LoginAsync(new LoginDto { Login = login, Password = password });
+            return true;
+        }
+        catch (ApiException ex) when (ex.StatusCode == 401)
+        {
+            return false;
+        }
+    }
+
+    public async Task LogoutAsync() => await _client.LogoutAsync();
+
+    public async Task<bool> CheckAuthAsync()
+    {
+        try
+        {
+            await _client.MeAsync();
+            return true;
+        }
+        catch (ApiException ex) when (ex.StatusCode == 401 || ex.StatusCode == 403)
+        {
+            return false;
+        }
     }
 
     public async Task<DomainDto> CreateDomain(DomainCreateUpdateDto dto) => await _client.DomainsPOSTAsync(dto);
@@ -50,6 +79,12 @@ public class RequestMonitoringAdminPanelApiWrapper(IConfiguration configuration,
     public async Task<DomainDto> GetDomain(int id) => await _client.DomainsGETAsync(id);
 
     public async Task<IReadOnlyList<DomainDto>> GetDomainList() => (IReadOnlyList<DomainDto>)await _client.DomainsAllAsync();
+
+    public async Task<PagedResultOfDomainDto> GetDomainListPagedAsync(int page, int pageSize, string? search = null)
+        => await _client.GetDomainsPagedAsync(page, pageSize, search);
+
+    public async Task<PagedResultOfQuotaDto> GetQuotaListPagedAsync(int page, int pageSize, int? domainId = null)
+        => await _client.GetQuotasPagedAsync(page, pageSize, domainId);
 
     public async Task<IReadOnlyList<DomainStatusTypeDto>> GetDomainStatusTypes() => (IReadOnlyList<DomainStatusTypeDto>)await _client.DomainStatusTypesAsync();
 

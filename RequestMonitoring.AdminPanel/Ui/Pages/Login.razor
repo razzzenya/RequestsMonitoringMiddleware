@@ -1,0 +1,86 @@
+@page "/login"
+@attribute [AllowAnonymous]
+@inject IRequestMonitoringAdminPanelApiWrapper AdminPanelApi
+@inject CookieAuthStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+
+<MudGrid Justify="Justify.Center" Style="margin-top: 15vh;">
+    <MudItem xs="12" sm="6" md="4">
+        <MudCard>
+            <MudCardHeader>
+                <MudText Typo="Typo.h5">Вход в систему</MudText>
+            </MudCardHeader>
+            <MudCardContent>
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+                }
+                <MudForm @ref="form">
+                    <MudTextField @bind-Value="login"
+                                  Label="Логин"
+                                  Required="true"
+                                  RequiredError="Укажите логин" />
+                    <MudTextField @bind-Value="password"
+                                  Label="Пароль"
+                                  InputType="InputType.Password"
+                                  Required="true"
+                                  RequiredError="Укажите пароль"
+                                  Class="mt-3" />
+                </MudForm>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           FullWidth="true"
+                           OnClick="Submit"
+                           Disabled="isLoading">
+                    @if (isLoading)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    }
+                    Войти
+                </MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private MudForm form = null!;
+    private string login = string.Empty;
+    private string password = string.Empty;
+    private string? errorMessage;
+    private bool isLoading;
+
+    private async Task Submit()
+    {
+        await form.Validate();
+        if (!form.IsValid)
+            return;
+
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var success = await AdminPanelApi.LoginAsync(login, password);
+            if (success)
+            {
+                AuthStateProvider.NotifyLogin();
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                errorMessage = "Неверный логин или пароль";
+            }
+        }
+        catch
+        {
+            errorMessage = "Ошибка подключения к серверу";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
