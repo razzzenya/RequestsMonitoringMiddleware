@@ -7,7 +7,9 @@
 В реляционной БД хранятся три сущности:
 
 - **`domain`** — домены, мониторинг которых ведётся.
-- **`DomainStatusType`** — справочник статусов домена (`Allowed`, `Greylisted`, `Unauthorized`).
+- **`DomainStatusTypes`** — справочник статусов домена (`Allowed`, `Greylisted`, `Unauthorized`).
+  Имя таблицы соответствует имени C#-сущности `DomainStatusType` во множественном числе
+  (на сущности нет атрибута `[Table]`, поэтому EF Core использует имя `DbSet`).
 - **`quota`** — настройки и текущее состояние квоты для домена (связь 1:1 с `domain`,
   обеспечивается уникальным индексом по `quota.domain_id`).
 
@@ -16,10 +18,10 @@
 
 ```mermaid
 erDiagram
-    DomainStatusType ||--o{ domain : "status_id"
+    DomainStatusTypes ||--o{ domain : "status_id"
     domain ||--|| quota : "domain_id (UNIQUE)"
 
-    DomainStatusType {
+    DomainStatusTypes {
         int    id    PK
         string name  "MaxLength(30), NOT NULL"
     }
@@ -27,7 +29,7 @@ erDiagram
     domain {
         int    id         PK
         string host       "NOT NULL"
-        int    status_id  FK "-> DomainStatusType.id, NOT NULL"
+        int    status_id  FK "-> DomainStatusTypes.id, NOT NULL"
     }
 
     quota {
@@ -44,12 +46,12 @@ erDiagram
 
 ## Связи
 
-| Связь                         | Кардинальность | Описание                                                                                        |
-|-------------------------------|----------------|-------------------------------------------------------------------------------------------------|
-| `DomainStatusType` → `domain` | 1 : N          | У каждого домена ровно один статус; один статус может быть присвоен многим доменам.             |
-| `domain` → `quota`            | 1 : 1          | У каждого домена не более одной квоты (уникальный индекс по `quota.domain_id`).                 |
+| Связь                          | Кардинальность | Описание                                                                                       |
+|--------------------------------|----------------|------------------------------------------------------------------------------------------------|
+| `DomainStatusTypes` → `domain` | 1 : N          | У каждого домена ровно один статус; один статус может быть присвоен многим доменам.            |
+| `domain` → `quota`             | 1 : 1          | У каждого домена не более одной квоты (уникальный индекс по `quota.domain_id`).                |
 
-## Значения справочника `DomainStatusType` (seed-данные)
+## Значения справочника `DomainStatusTypes` (seed-данные)
 
 | id | name         |
 |----|--------------|
