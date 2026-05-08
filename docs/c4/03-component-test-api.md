@@ -57,7 +57,8 @@ C4Component
 - **Пайплайн middleware** в `Test.Api/Program.cs`:
   `RequestLoggingMiddleware` → `RequestMonitoringMiddleware` → контроллеры.
 - **`RequestMonitoringMiddleware`** ветвится по `DomainStatusType.Id`:
-  `1` Whitelisted (с проверкой квоты), `2` Greylisted → `402`, `3` Unknown → `401`.
+  `1` Allowed (с проверкой квоты), `2` Greylisted → `402`, `3` Unauthorized → `401`
+  (имена соответствуют значениям, сидируемым в `DomainListsContext.OnModelCreating`).
 - **Квоты** реализованы стратегией `QuotaPolicy.Create(quota.Type)`. Атомарность
   обеспечивается `StringIncrementAsync` Redis, в SQLite счётчики
   синхронизируются раз в `QuotaSettings:SyncEveryNRequests` запросов.

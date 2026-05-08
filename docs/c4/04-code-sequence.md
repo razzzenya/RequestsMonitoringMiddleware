@@ -38,19 +38,19 @@ sequenceDiagram
         DomSvc->>DB: Domains.Include(DomainStatusType).FirstOrDefault(host)
         DB-->>DomSvc: Domain или null
         alt Не найден
-            DomSvc->>DB: DomainStatusTypes.First(Id=3) "Unknown"
-            DB-->>DomSvc: Unknown
+            DomSvc->>DB: DomainStatusTypes.First(Id=3) "Unauthorized"
+            DB-->>DomSvc: Unauthorized
         end
         DomSvc->>Cache: SetStringAsync(key, status, TTL)
     end
     DomSvc-->>MonMW: DomainStatusType
     deactivate DomSvc
 
-    alt status.Id == 3 (Unknown)
+    alt status.Id == 3 (Unauthorized)
         MonMW-->>Client: 401 "This domain is forbidden."
     else status.Id == 2 (Greylisted)
         MonMW-->>Client: 402 "This domain is greylisted."
-    else status.Id == 1 (Whitelisted)
+    else status.Id == 1 (Allowed)
         MonMW->>QSvc: CheckAndIncrementAsync(host)
 
         activate QSvc
@@ -58,7 +58,7 @@ sequenceDiagram
         DB-->>QSvc: Quota или null
 
         alt Quota == null
-            QSvc-->>MonMW: NoQuota → trigger Unknown branch
+            QSvc-->>MonMW: NoQuota (запрос пропускается дальше)
         else Quota найден
             QSvc->>QPol: QuotaPolicy.Create(quota.Type).ExecuteAsync(...)
             QPol->>Redis: StringSet(key, RequestCount, NotExists)
@@ -69,7 +69,7 @@ sequenceDiagram
             alt Exceeded
                 QSvc->>DB: Domain.DomainStatusTypeId = 2 (Greylisted), SaveChanges
                 QSvc->>DomCache: InvalidateDomainAsync(host)
-                DomCache->>Cache: KeyDelete Domain_{host}
+                DomCache->>Cache: RemoveAsync("Domain_{host}")
             end
             QSvc-->>MonMW: QuotaCheckResult
         end
@@ -79,7 +79,7 @@ sequenceDiagram
             MonMW-->>Client: 402 "Quota exceeded ... greylisted."
         else result == TemporarilyExceeded
             MonMW-->>Client: 429 "Too many requests."
-        else result == Allowed (или NoQuota — в этом случае поведение по умолчанию)
+        else result == Allowed (или NoQuota — пропуск без ограничений)
             MonMW->>Ctrl: await next(context)
             Ctrl-->>MonMW: ответ
             MonMW-->>LogMW: ответ
@@ -99,10 +99,12 @@ sequenceDiagram
 - **Порядок middleware** в `Test.Api/Program.cs`:
   `UseMiddleware<RequestLoggingMiddleware>()` → `UseMiddleware<RequestMonitoringMiddleware>()`,
   поэтому логирование измеряет время с учётом проверок домена/квоты.
-- **Telemetry**: оба middleware создают свой `ActivitySource`
-  (`RequestMonitoring.RequestLogging`, `RequestMonitoring.DomainCheck`) и
-  навешивают теги `domain.name`, `domain.status`, `domain.quota`,
-  `http.status_code`, `http.duration_ms`.
+- **Telemetry**: каждый middleware создаёт собственный `ActivitySource`
+  и навешивает свой набор тегов:
+  - `RequestMonitoringMiddleware` (`RequestMonitoring.DomainCheck`) —
+    `domain.name`, `domain.status`, `domain.status.id`, `domain.quota`;
+  - `RequestLoggingMiddleware` (`RequestMonitoring.RequestLogging`) —
+    `http.method`, `http.path`, `http.status_code`, `http.duration_ms`.
 - **Fire-and-forget** для логов в OpenSearch (`_ = openSearchLogService.IndexAsync(log)`)
   — клиент не ждёт записи лога.
 - **Атомарность счётчиков** обеспечивается `StringIncrementAsync` в Redis;

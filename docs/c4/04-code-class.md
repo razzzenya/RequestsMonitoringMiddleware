@@ -49,6 +49,7 @@ classDiagram
 
     class IQuotaCacheService {
         <<interface>>
+        +InvalidateQuotaAsync(int domainId) Task
     }
     class QuotaCacheService
 
@@ -154,8 +155,10 @@ classDiagram
 
 ## Заметки
 
-- Все сервисы регистрируются в DI как `Scoped` (см. `Test.Api/Program.cs` и
-  `AdminApi/Program.cs`).
+- Прикладные сервисы и `DbContext` регистрируются в DI как `Scoped`
+  (см. `Test.Api/Program.cs` и `AdminApi/Program.cs`). Исключение —
+  `IOpenSearchClient`, который регистрируется как `Singleton` через
+  `AddOpenSearchClient` (`RequestMonitoring.Library/Extensions/ServiceCollectionExtensions.cs`).
 - `QuotaService` использует **`IConnectionMultiplexer`** напрямую (а не
   `IDistributedCache`), потому что нужен атомарный `StringIncrementAsync` —
   это важная архитектурная деталь.

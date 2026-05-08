@@ -22,8 +22,8 @@ C4Component
 
         Component(mapster, "Mapster TypeAdapterConfig", "Mapster", "Domain → DomainDto (плоское поле DomainStatusName)")
 
-        Component(domainCache, "DomainCacheService",  "IDomainCacheService", "Инвалидация Domain_{host} в Redis при изменениях")
-        Component(quotaCache,  "QuotaCacheService",   "IQuotaCacheService",  "Инвалидация ключей счётчиков квот в Redis")
+        Component(domainCache, "DomainCacheService",  "IDomainCacheService", "Инвалидация Domain_{host} в Redis при изменениях (IDistributedCache.RemoveAsync)")
+        Component(quotaCache,  "QuotaCacheService",   "IQuotaCacheService",  "Инвалидация Quota_{domainId} в Redis (IDistributedCache.RemoveAsync)")
 
         ComponentDb(dbCtx, "DomainListsContext", "EF Core DbContext", "domain, domain_status_type, quota")
     }
@@ -44,8 +44,8 @@ C4Component
     Rel(quotasCtrl, dbCtx,      "EF Core")
     Rel(quotasCtrl, quotaCache, "Invalidate*")
 
-    Rel(domainCache, redis, "KeyDelete Domain_{host}",     "IDistributedCache / IConnectionMultiplexer")
-    Rel(quotaCache,  redis, "KeyDelete для счётчиков",     "IConnectionMultiplexer")
+    Rel(domainCache, redis, "RemoveAsync(\"Domain_{host}\")", "IDistributedCache")
+    Rel(quotaCache,  redis, "RemoveAsync(\"Quota_{domainId}\")", "IDistributedCache")
 
     Rel(dbCtx, sqlite, "SQLite")
 
