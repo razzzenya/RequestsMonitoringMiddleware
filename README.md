@@ -6,8 +6,8 @@
 
 Проект реализует решение для управления доступом и нагрузкой со стороны внешних доменов‑клиентов. Основные возможности:
 
-- **Контроль доступа доменов** — проверка хоста входящего запроса по белому, серому и неизвестному спискам. Запросы из неизвестных или серых доменов блокируются с соответствующими HTTP‑статусами (`401`, `402`).
-- **Квоты на запросы** — ограничение количества обращений каждого домена. Поддерживаются как абсолютные, так и периодические (например, в час/сутки) квоты. При исчерпании абсолютной квоты домен автоматически переводится в greylist; при исчерпании периодической — возвращается `429 Too Many Requests`.
+- **Контроль доступа доменов** — проверка хоста входящего запроса по справочнику статусов `DomainStatusType`: `Allowed` (Id = 1), `Greylisted` (Id = 2), `Unauthorized` (Id = 3). Запросы из доменов со статусами `Greylisted` и `Unauthorized` блокируются с соответствующими HTTP‑статусами (`402`, `401`).
+- **Квоты на запросы** — ограничение количества обращений каждого домена. Поддерживаются типы квот из `QuotaType`: `Unlimited`, `Total` (абсолютная), `Periodic` (периодическая, например в час/сутки), а также их варианты со сроком действия — `ExpiringUnlimited`, `ExpiringTotal`, `ExpiringPeriodic`. При исчерпании абсолютной квоты домен автоматически переводится в `Greylisted`; при исчерпании периодической — возвращается `429 Too Many Requests`.
 - **Логирование запросов** — каждый HTTP‑запрос (метод, путь, query, IP, заголовки, статус, длительность) индексируется в OpenSearch для последующего анализа и визуализации в OpenSearch Dashboards.
 - **Админ‑API и админ‑панель** — REST‑сервис и Blazor WebAssembly интерфейс для управления списком доменов, статусами и квотами.
 - **Наблюдаемость (observability)** — интеграция с OpenTelemetry: трассировки операций middleware (`RequestMonitoring.DomainCheck`, `RequestMonitoring.RequestLogging`), метрики ASP.NET Core, Runtime и Process.
@@ -46,14 +46,14 @@
 
 1. **`RequestLoggingMiddleware`** запускает `Stopwatch`, прокидывает запрос дальше по конвейеру и после ответа собирает запись `RequestLog` (метод, путь, query, IP клиента, заголовки, код ответа, длительность). Запись индексируется в OpenSearch асинхронно (`IndexAsync`), а действия оборачиваются в `Activity` для OpenTelemetry.
 
-2. **`RequestMonitoringMiddleware`** определяет хост домена (берётся из заголовка `X-Test-Host` либо `Host`) и вызывает `IDomainCheckService`, который через `IDomainCacheService` (Redis) с фоллбэком на БД возвращает статус домена:
-   - **`Whitelisted` (Id = 1)** — вызывается `IQuotaService.CheckAndIncrementAsync(host)`:
-     - В Redis атомарно инкрементируется счётчик через `StringIncrementAsync`. Применяется политика квоты (`QuotaPolicy.Create(quota.Type)`): абсолютная или периодическая. Каждые `QuotaSettings:SyncEveryNRequests` запросов значение синхронизируется в SQLite.
-     - При **`Exceeded`** (исчерпана абсолютная квота) домен автоматически переводится в `Greylisted` (обновление БД + инвалидация кэша), запрос возвращает `402 Payment Required`.
+2. **`RequestMonitoringMiddleware`** определяет хост домена (берётся из заголовка `X-Test-Host` либо `Host`) и вызывает `IDomainCheckService`. `DomainCheckService` сначала пытается прочитать статус домена напрямую из Redis через `IDistributedCache` (ключ `Domain_{host}`); при промахе или ошибке кэша обращается к БД и кэширует результат на `CacheSettings:ExpirationMinutes` минут. Возвращённый `DomainStatusType` определяет дальнейшее поведение:
+   - **`Allowed` (Id = 1)** — вызывается `IQuotaService.CheckAndIncrementAsync(host)`:
+     - В Redis атомарно инкрементируется счётчик через `StringIncrementAsync`. Применяется политика квоты (`QuotaPolicy.Create(quota.Type)`) для соответствующего `QuotaType` (`Unlimited` / `Total` / `Periodic` и их `Expiring*`‑варианты). Каждые `QuotaSettings:SyncEveryNRequests` запросов значение синхронизируется в SQLite.
+     - При **`Exceeded`** (исчерпана абсолютная квота) домен автоматически переводится в `Greylisted` (обновление БД + инвалидация кэша через `IDomainCacheService`), запрос возвращает `402 Payment Required`.
      - При **`TemporarilyExceeded`** (исчерпана периодическая квота) запрос возвращает `429 Too Many Requests` (счётчик сбросится в конце периода).
      - Иначе — управление передаётся следующему middleware (`await next(context)`).
    - **`Greylisted` (Id = 2)** — `402 Payment Required`.
-   - **`Unknown` (Id = 3)** — `401 Unauthorized`.
+   - **`Unauthorized` (Id = 3)** — `401 Unauthorized` (этот же статус возвращается и для доменов, отсутствующих в БД).
 
 3. **Управление данными** осуществляется через `RequestMonitoring.AdminApi` и Blazor‑панель: добавление/удаление доменов, смена статусов, конфигурация квот. После изменений соответствующие записи в Redis инвалидируются через `IDomainCacheService` / `IQuotaCacheService`.
 
@@ -91,4 +91,5 @@ dotnet test
 - `ConnectionStrings:Default` — строка подключения к SQLite.
 - `OpenSearch:Uri`, `OpenSearch:Index` — адрес и индекс OpenSearch.
 - `QuotaSettings:SyncEveryNRequests` — частота синхронизации счётчика квоты из Redis в БД (по умолчанию 10).
+- `CacheSettings:ExpirationMinutes` — время жизни записей кэша статуса домена в Redis (по умолчанию 10 минут).
 - `AllowedOrigins` — разрешённые origins для CORS админ‑API.
