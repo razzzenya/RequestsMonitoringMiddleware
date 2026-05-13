@@ -1,18 +1,17 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites;
-using System.Text.Json;
 
 namespace RequestMonitoring.Library.Middleware.Services.DomainCheck;
 
 /// <summary>
 /// Сервис проверки статуса домена
 /// </summary>
-public class DomainCheckService(IConfiguration configuration, IDistributedCache cache, DomainListsContext dbcontext, ILogger<DomainCheckService> logger) : IDomainCheckService
+public class DomainCheckService(IConfiguration configuration, HybridCache cache, DomainListsContext dbcontext, ILogger<DomainCheckService> logger) : IDomainCheckService
 {
     private readonly int cacheExpirationMinutes = configuration.GetValue("CacheSettings:ExpirationMinutes", 10);
 
@@ -23,30 +22,19 @@ public class DomainCheckService(IConfiguration configuration, IDistributedCache 
     {
         var domain = context.Request.Headers["X-Test-Host"].FirstOrDefault() ?? context.Request.Host.Host;
         var cacheKey = $"Domain_{domain}";
-        try
-        {
-            var cachedData = await cache.GetStringAsync(cacheKey);
-            if (!string.IsNullOrEmpty(cachedData))
+
+        var status = await cache.GetOrCreateAsync(
+            cacheKey,
+            async ct => await GetDomainStatusFromDatabaseAsync(domain),
+            new HybridCacheEntryOptions
             {
-                var deserializedStatus = JsonSerializer.Deserialize<DomainStatusType>(cachedData);
-                if (deserializedStatus != null)
-                {
-                    logger.LogInformation("Domain {Domain} status loaded from cache: {Status}", domain, deserializedStatus.Name);
-                    return deserializedStatus;
-                }
+                Expiration = TimeSpan.FromMinutes(cacheExpirationMinutes),
+                LocalCacheExpiration = TimeSpan.FromMinutes(cacheExpirationMinutes)
             }
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to read from cache for domain {Domain}. Falling back to database", domain);
-        }
+        );
 
-        logger.LogInformation("Cache miss for domain {Domain}, querying database", domain);
-        var domainStatus = await GetDomainStatusFromDatabaseAsync(domain);
-
-        await TryCacheResultAsync(cacheKey, domainStatus);
-
-        return domainStatus;
+        logger.LogInformation("Domain {Domain} status: {Status}", domain, status.Name);
+        return status;
     }
 
     /// <summary>
@@ -66,29 +54,6 @@ public class DomainCheckService(IConfiguration configuration, IDistributedCache 
         }
 
         logger.LogWarning("Domain {Domain} not found in database. Returning blocked status", domain);
-        return await dbcontext.DomainStatusTypes.FirstAsync(s => s.Id == 3); ;
-    }
-
-    /// <summary>
-    /// Пытается сохранить результат в кеш
-    /// </summary>
-    private async Task TryCacheResultAsync(string cacheKey, DomainStatusType status)
-    {
-        try
-        {
-            var serializedData = JsonSerializer.Serialize(status);
-            var cacheOptions = new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(cacheExpirationMinutes)
-            };
-
-            await cache.SetStringAsync(cacheKey, serializedData, cacheOptions);
-            logger.LogInformation("Cached domain status with key {CacheKey} for {Minutes} minutes",
-                cacheKey, cacheExpirationMinutes);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to cache result for key {CacheKey}", cacheKey);
-        }
+        return await dbcontext.DomainStatusTypes.FirstAsync(s => s.Id == 3);
     }
 }

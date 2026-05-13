@@ -23,6 +23,7 @@ builder.Services.AddScoped<IQuotaService, QuotaService>();
 builder.Services.AddScoped<IDomainCacheService, DomainCacheService>();
 builder.Services.AddScoped<IQuotaCacheService, QuotaCacheService>();
 builder.AddRedisDistributedCache("cache");
+builder.Services.AddHybridCache();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
