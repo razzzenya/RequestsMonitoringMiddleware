@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites;
+using System.Text;
 
 namespace RequestMonitoring.Library.Middleware.Services.DomainCheck;
 
@@ -21,6 +22,7 @@ public class DomainCheckService(IConfiguration configuration, HybridCache cache,
     public async Task<DomainStatusType> IsDomainAllowedAsync(HttpContext context)
     {
         var domain = context.Request.Headers["X-Test-Host"].FirstOrDefault() ?? context.Request.Host.Host;
+        var safeDomainForLog = SanitizeForLog(domain);
         var cacheKey = $"Domain_{domain}";
 
         var status = await cache.GetOrCreateAsync(
@@ -33,7 +35,7 @@ public class DomainCheckService(IConfiguration configuration, HybridCache cache,
             }
         );
 
-        logger.LogInformation("Domain {Domain} status: {Status}", domain, status.Name);
+        logger.LogInformation("Domain {Domain} status: {Status}", safeDomainForLog, status.Name);
         return status;
     }
 
@@ -42,6 +44,7 @@ public class DomainCheckService(IConfiguration configuration, HybridCache cache,
     /// </summary>
     private async Task<DomainStatusType> GetDomainStatusFromDatabaseAsync(string domain)
     {
+        var safeDomainForLog = SanitizeForLog(domain);
         var domainEntity = await dbcontext.Domains
             .Include(d => d.DomainStatusType)
             .FirstOrDefaultAsync(d => d.Host == domain);
@@ -49,11 +52,30 @@ public class DomainCheckService(IConfiguration configuration, HybridCache cache,
         if (domainEntity?.DomainStatusType != null)
         {
             logger.LogInformation("Domain {Domain} found in database with status {Status}",
-                domain, domainEntity.DomainStatusType.Name);
+                safeDomainForLog, domainEntity.DomainStatusType.Name);
             return domainEntity.DomainStatusType;
         }
 
-        logger.LogWarning("Domain {Domain} not found in database. Returning blocked status", domain);
+        logger.LogWarning("Domain {Domain} not found in database. Returning blocked status", safeDomainForLog);
         return await dbcontext.DomainStatusTypes.FirstAsync(s => s.Id == 3);
+    }
+
+    private static string SanitizeForLog(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return string.Empty;
+        }
+
+        var sb = new StringBuilder(value.Length);
+        foreach (var ch in value)
+        {
+            if (!char.IsControl(ch))
+            {
+                sb.Append(ch);
+            }
+        }
+
+        return sb.ToString();
     }
 }
