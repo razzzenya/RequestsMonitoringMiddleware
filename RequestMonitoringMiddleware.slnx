@@ -10,6 +10,7 @@
     <Project Path="RequestMonitoring.Library/RequestMonitoring.Library.csproj" />
   </Folder>
   <Folder Name="/test/">
+    <Project Path="RequestMonitoring.LoadTests/RequestMonitoring.LoadTests.csproj" Id="186a891f-c255-4cae-876f-83f4dde5c470" />
     <Project Path="RequestMonitoring.Test.Api/RequestMonitoring.Test.Api.csproj" />
     <Project Path="RequestMonitoring.Tests/RequestMonitoring.Tests.csproj" Id="16808594-8fce-48c3-aa42-018033001de2" />
   </Folder>
