@@ -6,7 +6,7 @@ test suite: `nbomber_default_test_suite_name`
 
 test name: `nbomber_default_test_name`
 
-session id: `2026-05-17_12-48-04_e6179086`
+session id: `2026-05-27_15-57-47_a62483cf`
 
 > scenario stats
 
@@ -14,11 +14,11 @@ session id: `2026-05-17_12-48-04_e6179086`
 
 scenario: `allowed_domains`
 
-  - ok count: `121`
+  - ok count: `524`
 
-  - fail count: `659`
+  - fail count: `256`
 
-  - all data: `0.031` MB
+  - all data: `0.133` MB
 
   - duration: `00:01:30`
 
@@ -39,18 +39,18 @@ load simulations:
 |step|ok stats|
 |---|---|
 |name|`global information`|
-|request count|all = `780`, ok = `121`, RPS = `1.34`|
-|latency (ms)|min = `87.02`, mean = `2320.82`, max = `4997.38`, StdDev = `1307.42`|
-|latency percentile (ms)|p50 = `2469.89`, p75 = `3387.39`, p95 = `4464.64`, p99 = `4800.51`|
-|data transfer (KB)|min = `0.259`, mean = `0.260`, max = `0.263`, all = `0.031` MB|
+|request count|all = `780`, ok = `524`, RPS = `5.82`|
+|latency (ms)|min = `11.98`, mean = `2151.47`, max = `5008.45`, StdDev = `1663.12`|
+|latency percentile (ms)|p50 = `1989.63`, p75 = `3794.94`, p95 = `4800.51`, p99 = `4964.35`|
+|data transfer (KB)|min = `0.259`, mean = `0.260`, max = `0.263`, all = `0.133` MB|
 
 
 |step|failures stats|
 |---|---|
 |name|`global information`|
-|request count|all = `780`, fail = `659`, RPS = `7.32`|
-|latency (ms)|min = `4999.38`, mean = `5006.85`, max = `5031.44`, StdDev = `5.36`|
-|latency percentile (ms)|p50 = `5009.41`, p75 = `5013.5`, p95 = `5017.6`, p99 = `5017.6`|
+|request count|all = `780`, fail = `256`, RPS = `2.84`|
+|latency (ms)|min = `4999.98`, mean = `5008.26`, max = `5028.24`, StdDev = `4.96`|
+|latency percentile (ms)|p50 = `5009.41`, p75 = `5013.5`, p95 = `5017.6`, p99 = `5021.7`|
 
 
 > status codes for scenario: `allowed_domains`
@@ -59,8 +59,8 @@ load simulations:
 
 |status code|count|message|
 |---|---|---|
-|OK|121||
-|-100|659|operation timeout|
+|OK|524||
+|-100|256|operation timeout|
 
 
 > scenario stats
@@ -73,7 +73,7 @@ scenario: `greylisted_domains`
 
   - fail count: `780`
 
-  - all data: `0.023` MB
+  - all data: `0.095` MB
 
   - duration: `00:01:30`
 
@@ -103,9 +103,9 @@ load simulations:
 |---|---|
 |name|`global information`|
 |request count|all = `780`, fail = `780`, RPS = `8.67`|
-|latency (ms)|min = `49.36`, mean = `4190.98`, max = `5032.05`, StdDev = `1575.99`|
-|latency percentile (ms)|p50 = `5005.31`, p75 = `5013.5`, p95 = `5017.6`, p99 = `5017.6`|
-|data transfer (KB)|min = `0.258`, mean = `0.030`, max = `0.258`, all = `0.023` MB|
+|latency (ms)|min = `5.79`, mean = `1601.97`, max = `5013.78`, StdDev = `1340.61`|
+|latency percentile (ms)|p50 = `1395.71`, p75 = `2347.01`, p95 = `4800.51`, p99 = `5013.5`|
+|data transfer (KB)|min = `0.258`, mean = `0.124`, max = `0.258`, all = `0.095` MB|
 
 
 > status codes for scenario: `greylisted_domains`
@@ -114,9 +114,9 @@ load simulations:
 
 |status code|count|message|
 |---|---|---|
-|-100|593|operation timeout|
-|PaymentRequired|93||
-|Unauthorized|94|Unexpected status Unauthorized|
+|-100|26|operation timeout|
+|PaymentRequired|376||
+|Unauthorized|378|Unexpected status Unauthorized|
 
 
 > scenario stats
@@ -129,7 +129,7 @@ scenario: `unknown_domains`
 
   - fail count: `780`
 
-  - all data: `0.045` MB
+  - all data: `0.186` MB
 
   - duration: `00:01:30`
 
@@ -159,9 +159,9 @@ load simulations:
 |---|---|
 |name|`global information`|
 |request count|all = `780`, fail = `780`, RPS = `8.67`|
-|latency (ms)|min = `49.36`, mean = `4222.54`, max = `5031.41`, StdDev = `1535.71`|
-|latency percentile (ms)|p50 = `5005.31`, p75 = `5013.5`, p95 = `5017.6`, p99 = `5017.6`|
-|data transfer (KB)|min = `0.25`, mean = `0.058`, max = `0.251`, all = `0.045` MB|
+|latency (ms)|min = `6.03`, mean = `1535.15`, max = `5012.93`, StdDev = `1248.9`|
+|latency percentile (ms)|p50 = `1405.95`, p75 = `2131.97`, p95 = `4517.89`, p99 = `5009.41`|
+|data transfer (KB)|min = `0.25`, mean = `0.243`, max = `0.251`, all = `0.186` MB|
 
 
 > status codes for scenario: `unknown_domains`
@@ -170,7 +170,7 @@ load simulations:
 
 |status code|count|message|
 |---|---|---|
-|-100|598|operation timeout|
-|Unauthorized|182||
+|-100|20|operation timeout|
+|Unauthorized|760||
 
 

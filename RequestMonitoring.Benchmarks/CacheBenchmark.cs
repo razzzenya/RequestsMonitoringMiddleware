@@ -33,6 +33,7 @@ public class CacheBenchmark
     private IDistributedCache _valkeyCache = null!;
     private IDistributedCache _garnetCache = null!;
     private HybridCache _hybridCache = null!;
+    private ServiceProvider _serviceProvider = null!;
 
     private RedisContainer _redisContainer = null!;
     private RedisContainer _valkeyContainer = null!;
@@ -65,7 +66,8 @@ public class CacheBenchmark
         var services = new ServiceCollection();
         services.AddHybridCache();
         services.AddStackExchangeRedisCache(o => o.Configuration = _redisContainer.GetConnectionString());
-        _hybridCache = services.BuildServiceProvider().GetRequiredService<HybridCache>();
+        _serviceProvider = services.BuildServiceProvider();
+        _hybridCache = _serviceProvider.GetRequiredService<HybridCache>();
 
         _memoryCache.Set(Key, Value, TimeSpan.FromMinutes(10));
         await _redisCache.SetStringAsync(Key, Value, CacheOptions);
@@ -77,6 +79,7 @@ public class CacheBenchmark
     public async Task Cleanup()
     {
         _memoryCache.Dispose();
+        await _serviceProvider.DisposeAsync();
         await Task.WhenAll(
             _redisContainer.DisposeAsync().AsTask(),
             _valkeyContainer.DisposeAsync().AsTask(),
@@ -102,9 +105,19 @@ public class CacheBenchmark
     [Benchmark(Description = "IDistributedCache Garnet Get")]
     public async Task<string?> Garnet_Get() => await _garnetCache.GetStringAsync(Key);
 
+    [IterationSetup(Target = nameof(HybridCache_Get))]
+    public void HybridCache_Get_Setup()
+        => _hybridCache.SetAsync(Key, Value, new HybridCacheEntryOptions
+        {
+            Expiration = TimeSpan.FromMinutes(10)
+        }).AsTask().GetAwaiter().GetResult();
+
     [Benchmark(Description = "HybridCache Get")]
     public async Task<string> HybridCache_Get()
-        => await _hybridCache.GetOrCreateAsync(Key, _ => ValueTask.FromResult(Value));
+        => await _hybridCache.GetOrCreateAsync(
+            Key,
+            static _ => ValueTask.FromException<string>(
+                new InvalidOperationException("HybridCache_Get benchmark expects the key to be pre-populated.")));
 
     // ── SET ──────────────────────────────────────────────────────────────────
 

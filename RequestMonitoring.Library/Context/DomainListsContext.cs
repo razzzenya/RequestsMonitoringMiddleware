@@ -23,6 +23,10 @@ public class DomainListsContext : DbContext
             new DomainStatusType { Id = 3, Name = "Unauthorized" }
         );
 
+        modelBuilder.Entity<Domain>()
+            .HasIndex(d => d.Host)
+            .IsUnique();
+
         modelBuilder.Entity<Quota>()
             .HasIndex(q => q.DomainId)
             .IsUnique();

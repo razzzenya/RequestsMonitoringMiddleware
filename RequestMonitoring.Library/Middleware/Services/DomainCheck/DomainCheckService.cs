@@ -25,14 +25,17 @@ public class DomainCheckService(IConfiguration configuration, HybridCache cache,
         var safeDomainForLog = SanitizeForLog(domain);
         var cacheKey = $"Domain_{domain}";
 
+        var cancellationToken = context.RequestAborted;
+
         var status = await cache.GetOrCreateAsync(
             cacheKey,
-            async ct => await GetDomainStatusFromDatabaseAsync(domain),
+            async ct => await GetDomainStatusFromDatabaseAsync(domain, ct),
             new HybridCacheEntryOptions
             {
                 Expiration = TimeSpan.FromMinutes(cacheExpirationMinutes),
                 LocalCacheExpiration = TimeSpan.FromMinutes(cacheExpirationMinutes)
-            }
+            },
+            cancellationToken: cancellationToken
         );
 
         logger.LogInformation("Domain {Domain} status: {Status}", safeDomainForLog, status.Name);
@@ -42,12 +45,12 @@ public class DomainCheckService(IConfiguration configuration, HybridCache cache,
     /// <summary>
     /// Получает статус домена из базы данных
     /// </summary>
-    private async Task<DomainStatusType> GetDomainStatusFromDatabaseAsync(string domain)
+    private async Task<DomainStatusType> GetDomainStatusFromDatabaseAsync(string domain, CancellationToken ct = default)
     {
         var safeDomainForLog = SanitizeForLog(domain);
         var domainEntity = await dbcontext.Domains
             .Include(d => d.DomainStatusType)
-            .FirstOrDefaultAsync(d => d.Host == domain);
+            .FirstOrDefaultAsync(d => d.Host == domain, ct);
 
         if (domainEntity?.DomainStatusType != null)
         {
@@ -57,7 +60,7 @@ public class DomainCheckService(IConfiguration configuration, HybridCache cache,
         }
 
         logger.LogWarning("Domain {Domain} not found in database. Returning blocked status", safeDomainForLog);
-        return await dbcontext.DomainStatusTypes.FirstAsync(s => s.Id == 3);
+        return new DomainStatusType { Id = 3, Name = "Unauthorized" };
     }
 
     private static string SanitizeForLog(string? value)
