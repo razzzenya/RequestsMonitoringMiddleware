@@ -24,8 +24,7 @@ var api = builder.AddProject<Projects.RequestMonitoring_Test_Api>("api")
 
 var adminApi = builder.AddProject<Projects.RequestMonitoring_AdminApi>("adminapi")
     .WaitFor(redis)
-    .WithReference(redis)
-    .WithUrlForEndpoint("https", url => url.Url = url.Url.Replace("/swagger", "") + "/scalar/v1");
+    .WithReference(redis);
 
 var adminPanel = builder.AddProject<Projects.RequestMonitoring_AdminPanel>("adminpanel")
     .WaitFor(adminApi);
