@@ -365,3 +365,5 @@ FodyWeavers.xsd
 # SQLite temporary files
 *.db-shm
 *.db-wal
+
+*.lscache

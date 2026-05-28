@@ -1,9 +1,8 @@
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Http;
 
 namespace RequestMonitoring.AdminPanel.Api;
 
-public class CookieHandler(CookieAuthStateProvider authStateProvider) : DelegatingHandler
+public class CookieHandler(IServiceProvider serviceProvider) : DelegatingHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -14,6 +13,7 @@ public class CookieHandler(CookieAuthStateProvider authStateProvider) : Delegati
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized
             || response.StatusCode == System.Net.HttpStatusCode.Forbidden)
         {
+            var authStateProvider = serviceProvider.GetRequiredService<CookieAuthStateProvider>();
             authStateProvider.NotifyLogout();
         }
 

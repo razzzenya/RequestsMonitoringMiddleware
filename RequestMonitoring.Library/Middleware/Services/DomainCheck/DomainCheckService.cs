@@ -1,18 +1,18 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites;
-using System.Text.Json;
+using System.Text;
 
 namespace RequestMonitoring.Library.Middleware.Services.DomainCheck;
 
 /// <summary>
 /// Сервис проверки статуса домена
 /// </summary>
-public class DomainCheckService(IConfiguration configuration, IDistributedCache cache, DomainListsContext dbcontext, ILogger<DomainCheckService> logger) : IDomainCheckService
+public class DomainCheckService(IConfiguration configuration, HybridCache cache, DomainListsContext dbcontext, ILogger<DomainCheckService> logger) : IDomainCheckService
 {
     private readonly int cacheExpirationMinutes = configuration.GetValue("CacheSettings:ExpirationMinutes", 10);
 
@@ -22,73 +22,63 @@ public class DomainCheckService(IConfiguration configuration, IDistributedCache 
     public async Task<DomainStatusType> IsDomainAllowedAsync(HttpContext context)
     {
         var domain = context.Request.Headers["X-Test-Host"].FirstOrDefault() ?? context.Request.Host.Host;
+        var safeDomainForLog = SanitizeForLog(domain);
         var cacheKey = $"Domain_{domain}";
-        try
-        {
-            var cachedData = await cache.GetStringAsync(cacheKey);
-            if (!string.IsNullOrEmpty(cachedData))
+
+        var cancellationToken = context.RequestAborted;
+
+        var status = await cache.GetOrCreateAsync(
+            cacheKey,
+            async ct => await GetDomainStatusFromDatabaseAsync(domain, ct),
+            new HybridCacheEntryOptions
             {
-                var deserializedStatus = JsonSerializer.Deserialize<DomainStatusType>(cachedData);
-                if (deserializedStatus != null)
-                {
-                    logger.LogInformation("Domain {Domain} status loaded from cache: {Status}", domain, deserializedStatus.Name);
-                    return deserializedStatus;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to read from cache for domain {Domain}. Falling back to database", domain);
-        }
+                Expiration = TimeSpan.FromMinutes(cacheExpirationMinutes),
+                LocalCacheExpiration = TimeSpan.FromMinutes(cacheExpirationMinutes)
+            },
+            cancellationToken: cancellationToken
+        );
 
-        logger.LogInformation("Cache miss for domain {Domain}, querying database", domain);
-        var domainStatus = await GetDomainStatusFromDatabaseAsync(domain);
-
-        await TryCacheResultAsync(cacheKey, domainStatus);
-
-        return domainStatus;
+        logger.LogInformation("Domain {Domain} status: {Status}", safeDomainForLog, status.Name);
+        return status;
     }
 
     /// <summary>
     /// Получает статус домена из базы данных
     /// </summary>
-    private async Task<DomainStatusType> GetDomainStatusFromDatabaseAsync(string domain)
+    private async Task<DomainStatusType> GetDomainStatusFromDatabaseAsync(string domain, CancellationToken ct = default)
     {
+        var safeDomainForLog = SanitizeForLog(domain);
         var domainEntity = await dbcontext.Domains
             .Include(d => d.DomainStatusType)
-            .FirstOrDefaultAsync(d => d.Host == domain);
+            .FirstOrDefaultAsync(d => d.Host == domain, ct);
 
         if (domainEntity?.DomainStatusType != null)
         {
             logger.LogInformation("Domain {Domain} found in database with status {Status}",
-                domain, domainEntity.DomainStatusType.Name);
+                safeDomainForLog, domainEntity.DomainStatusType.Name);
             return domainEntity.DomainStatusType;
         }
 
-        logger.LogWarning("Domain {Domain} not found in database. Returning blocked status", domain);
-        return await dbcontext.DomainStatusTypes.FirstAsync(s => s.Id == 3); ;
+        logger.LogWarning("Domain {Domain} not found in database. Returning blocked status", safeDomainForLog);
+        return new DomainStatusType { Id = 3, Name = "Unauthorized" };
     }
 
-    /// <summary>
-    /// Пытается сохранить результат в кеш
-    /// </summary>
-    private async Task TryCacheResultAsync(string cacheKey, DomainStatusType status)
+    private static string SanitizeForLog(string? value)
     {
-        try
+        if (string.IsNullOrEmpty(value))
         {
-            var serializedData = JsonSerializer.Serialize(status);
-            var cacheOptions = new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(cacheExpirationMinutes)
-            };
+            return string.Empty;
+        }
 
-            await cache.SetStringAsync(cacheKey, serializedData, cacheOptions);
-            logger.LogInformation("Cached domain status with key {CacheKey} for {Minutes} minutes",
-                cacheKey, cacheExpirationMinutes);
-        }
-        catch (Exception ex)
+        var sb = new StringBuilder(value.Length);
+        foreach (var ch in value)
         {
-            logger.LogWarning(ex, "Failed to cache result for key {CacheKey}", cacheKey);
+            if (!char.IsControl(ch))
+            {
+                sb.Append(ch);
+            }
         }
+
+        return sb.ToString();
     }
 }

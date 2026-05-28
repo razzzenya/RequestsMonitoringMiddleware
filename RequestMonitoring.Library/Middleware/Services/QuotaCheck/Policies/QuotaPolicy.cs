@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites;
 using RequestMonitoring.Library.Shared;
@@ -50,8 +51,9 @@ public abstract class QuotaPolicy
     {
         if (count % syncEveryNRequests == 0)
         {
-            quota.RequestCount = count;
-            await dbContext.SaveChangesAsync();
+            await dbContext.Quotas
+                .Where(q => q.Id == quota.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(q => q.RequestCount, count));
         }
     }
 }

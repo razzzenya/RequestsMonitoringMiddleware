@@ -4,12 +4,13 @@ using Microsoft.Extensions.Logging;
 using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites;
 using RequestMonitoring.Library.Middleware.Services.DomainCache;
+using RequestMonitoring.Library.Middleware.Services.QuotaCache;
 using RequestMonitoring.Library.Middleware.Services.QuotaCheck.Policies;
 using StackExchange.Redis;
 
 namespace RequestMonitoring.Library.Middleware.Services.QuotaCheck;
 
-public class QuotaService(IConnectionMultiplexer redis, DomainListsContext dbContext, IConfiguration configuration, IDomainCacheService domainCacheService, ILogger<QuotaService> logger) : IQuotaService
+public class QuotaService(IConnectionMultiplexer redis, DomainListsContext dbContext, IConfiguration configuration, IDomainCacheService domainCacheService, IQuotaCacheService quotaCacheService, ILogger<QuotaService> logger) : IQuotaService
 {
     private readonly int _syncEveryNRequests = configuration.GetValue("QuotaSettings:SyncEveryNRequests", 10);
 
@@ -43,15 +44,15 @@ public class QuotaService(IConnectionMultiplexer redis, DomainListsContext dbCon
     {
         try
         {
-            var greylistedStatus = await dbContext.DomainStatusTypes.FindAsync(2);
-            if (greylistedStatus is null)
+            var affected = await dbContext.Domains
+                .Where(d => d.Id == domain.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(d => d.DomainStatusTypeId, 2));
+
+            if (affected == 0)
                 return;
 
-            domain.DomainStatusTypeId = 2;
-            domain.DomainStatusType = greylistedStatus;
-            await dbContext.SaveChangesAsync();
-
             await domainCacheService.InvalidateDomainAsync(domain.Host);
+            await quotaCacheService.InvalidateQuotaAsync(domain.Id);
 
             logger.LogWarning("Domain {Host} moved to Greylisted due to quota exceeded", domain.Host);
         }
