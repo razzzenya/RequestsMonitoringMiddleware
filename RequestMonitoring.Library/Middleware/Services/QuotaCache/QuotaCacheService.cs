@@ -15,8 +15,7 @@ public class QuotaCacheService(IDistributedCache cache, ILogger<QuotaCacheServic
     {
         try
         {
-            var cacheKey = $"Quota_{domainId}";
-            await cache.RemoveAsync(cacheKey);
+            await cache.RemoveAsync($"Quota_{domainId}");
             logger.LogInformation("Quota cache invalidated for domain ID: {DomainId}", domainId);
         }
         catch (Exception ex)

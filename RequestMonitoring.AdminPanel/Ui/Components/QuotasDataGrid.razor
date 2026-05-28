@@ -107,7 +107,7 @@
 
     private async Task ResetCounterAsync(QuotaDto quota)
     {
-        var confirm = await DialogService.ShowMessageBox(
+        var confirm = await DialogService.ShowMessageBoxAsync(
             "Сброс счётчика",
             $"Сбросить счётчик запросов для квоты домена ID {quota.DomainId}?",
             yesText: "Сбросить",
@@ -134,7 +134,7 @@
 
     private async Task DeleteQuotaAsync(QuotaDto quota)
     {
-        var confirm = await DialogService.ShowMessageBox(
+        var confirm = await DialogService.ShowMessageBoxAsync(
             "Удаление квоты",
             $"Вы уверены, что хотите удалить квоту домена ID {quota.DomainId}?",
             yesText: "Удалить",

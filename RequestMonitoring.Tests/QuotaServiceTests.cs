@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -5,6 +6,7 @@ using Moq;
 using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites;
 using RequestMonitoring.Library.Middleware.Services.DomainCache;
+using RequestMonitoring.Library.Middleware.Services.QuotaCache;
 using RequestMonitoring.Library.Middleware.Services.QuotaCheck;
 using RequestMonitoring.Library.Shared;
 using StackExchange.Redis;
@@ -16,22 +18,21 @@ namespace RequestMonitoring.Tests;
 /// </summary>
 public class QuotaServiceTests
 {
-    private static DomainListsContext CreateDbContext()
+    // Соединение живёт на всё время теста, БД удаляется при его закрытии
+    private static (DomainListsContext Ctx, SqliteConnection Connection) CreateDbContext()
     {
+        var connection = new SqliteConnection("DataSource=:memory:");
+        connection.Open();
+
         var options = new DbContextOptionsBuilder<DomainListsContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .UseSqlite(connection)
             .Options;
 
         var ctx = new DomainListsContext(options);
+        // EnsureCreated применяет HasData seed — статусы добавляются автоматически
+        ctx.Database.EnsureCreated();
 
-        // HasData seed is not applied in InMemory DB - add status types manually
-        ctx.DomainStatusTypes.AddRange(
-            new DomainStatusType { Id = 1, Name = "Allowed" },
-            new DomainStatusType { Id = 2, Name = "Greylisted" },
-            new DomainStatusType { Id = 3, Name = "Unauthorized" });
-        ctx.SaveChanges();
-
-        return ctx;
+        return (ctx, connection);
     }
 
     private static (Mock<IDatabase> MockDb, Mock<IConnectionMultiplexer> MockRedis) CreateRedisMocks(
@@ -77,7 +78,12 @@ public class QuotaServiceTests
             .Setup(s => s.InvalidateDomainAsync(It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        return new QuotaService(redis, ctx, config, domainCacheMock.Object,
+        var quotaCacheMock = new Mock<IQuotaCacheService>();
+        quotaCacheMock
+            .Setup(s => s.InvalidateQuotaAsync(It.IsAny<int>()))
+            .Returns(Task.CompletedTask);
+
+        return new QuotaService(redis, ctx, config, domainCacheMock.Object, quotaCacheMock.Object,
             NullLogger<QuotaService>.Instance);
     }
 
@@ -102,11 +108,11 @@ public class QuotaServiceTests
     [Fact]
     public async Task TotalQuota_Exceeded_ReturnsExceeded()
     {
-        var ctx = CreateDbContext();
+        var (ctx, connection) = CreateDbContext();
+        await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        // Counter returns 6 (over MaxRequests of 5)
-        var (_, mockMux) = CreateRedisMocks(() => 6);
+        var (_, mockMux) = CreateRedisMocks(() => 6); // Counter returns 6 (over MaxRequests of 5)
 
         var quota = new Quota
         {
@@ -122,23 +128,24 @@ public class QuotaServiceTests
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = CreateService(mockMux.Object, ctx);
-
         var result = await service.CheckAndIncrementAsync("example.com");
 
         Assert.Equal(QuotaCheckResult.Exceeded, result);
 
-        var updatedDomain = await ctx.Domains.FindAsync([domain.Id, TestContext.Current.CancellationToken], TestContext.Current.CancellationToken);
-        Assert.Equal(2, updatedDomain!.DomainStatusTypeId);
+        // ExecuteUpdateAsync работает напрямую через SQL, поэтому читаем свежие данные через AsNoTracking
+        var updatedDomain = await ctx.Domains.AsNoTracking()
+            .FirstAsync(d => d.Id == domain.Id, TestContext.Current.CancellationToken);
+        Assert.Equal(2, updatedDomain.DomainStatusTypeId);
     }
 
     [Fact]
     public async Task TotalQuota_NotExceeded_ReturnsAllowed()
     {
-        var ctx = CreateDbContext();
+        var (ctx, connection) = CreateDbContext();
+        await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        // Counter returns 3 (under MaxRequests of 5)
-        var (_, mockMux) = CreateRedisMocks(() => 3);
+        var (_, mockMux) = CreateRedisMocks(() => 3); // Counter returns 3 (under MaxRequests of 5)
 
         var quota = new Quota
         {
@@ -154,7 +161,6 @@ public class QuotaServiceTests
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = CreateService(mockMux.Object, ctx);
-
         var result = await service.CheckAndIncrementAsync("example.com");
 
         Assert.Equal(QuotaCheckResult.Allowed, result);
@@ -163,11 +169,11 @@ public class QuotaServiceTests
     [Fact]
     public async Task PeriodicQuota_TemporarilyExceeded_Returns429Result()
     {
-        var ctx = CreateDbContext();
+        var (ctx, connection) = CreateDbContext();
+        await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        // Counter returns 6 (over MaxRequests of 5) - periodic quota, should not Greylisted
-        var (_, mockMux) = CreateRedisMocks(() => 6);
+        var (_, mockMux) = CreateRedisMocks(() => 6); // Counter returns 6 (over MaxRequests of 5)
 
         var quota = new Quota
         {
@@ -178,26 +184,28 @@ public class QuotaServiceTests
             MaxRequests = 5,
             PeriodSeconds = 3600,
             RequestCount = 5,
-            LastResetAt = DateTime.UtcNow  // fresh period
+            LastResetAt = DateTime.UtcNow  // fresh period — не сбрасываем
         };
 
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = CreateService(mockMux.Object, ctx);
-
         var result = await service.CheckAndIncrementAsync("example.com");
 
         Assert.Equal(QuotaCheckResult.TemporarilyExceeded, result);
 
-        var updatedDomain = await ctx.Domains.FindAsync([domain.Id, TestContext.Current.CancellationToken], TestContext.Current.CancellationToken);
-        Assert.Equal(1, updatedDomain!.DomainStatusTypeId);
+        // Домен НЕ должен уйти в Greylisted при временном превышении
+        var updatedDomain = await ctx.Domains.AsNoTracking()
+            .FirstAsync(d => d.Id == domain.Id, TestContext.Current.CancellationToken);
+        Assert.Equal(1, updatedDomain.DomainStatusTypeId);
     }
 
     [Fact]
     public async Task PeriodicQuota_PeriodExpired_ResetsCounterAndClearsRedisKey()
     {
-        var ctx = CreateDbContext();
+        var (ctx, connection) = CreateDbContext();
+        await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
         var callCount = 0;
@@ -219,32 +227,31 @@ public class QuotaServiceTests
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = CreateService(mockMux.Object, ctx);
-
         var result = await service.CheckAndIncrementAsync("example.com");
 
         Assert.Equal(QuotaCheckResult.Allowed, result);
 
-        // The Redis key must be deleted when the period resets
+        // Redis ключ должен быть удалён при сбросе периода
         mockDb.Verify(d => d.KeyDeleteAsync(
             It.Is<RedisKey>(k => k.ToString().Contains(domain.Id.ToString())),
             It.IsAny<CommandFlags>()), Times.Once);
 
-        // DB counter must have been reset (well below the original 50) before the new increment
-        var updatedQuota = await ctx.Quotas
-            .FirstOrDefaultAsync(q => q.Id == quota.Id, TestContext.Current.CancellationToken);
-        Assert.Equal(1, updatedQuota!.RequestCount);
+        // Счётчик сброшен в 0, затем инкрементирован до 1 — читаем через AsNoTracking
+        var updatedQuota = await ctx.Quotas.AsNoTracking()
+            .FirstAsync(q => q.Id == quota.Id, TestContext.Current.CancellationToken);
+        Assert.Equal(1, updatedQuota.RequestCount);
     }
 
     [Fact]
     public async Task NoQuota_ReturnsNoQuota()
     {
-        var ctx = CreateDbContext();
+        var (ctx, connection) = CreateDbContext();
+        await using var _ = connection;
         AddAllowedDomain(ctx, "noquota.com");
 
         var (_, mockMux) = CreateRedisMocks(() => 1);
 
         var service = CreateService(mockMux.Object, ctx);
-
         var result = await service.CheckAndIncrementAsync("noquota.com");
 
         Assert.Equal(QuotaCheckResult.NoQuota, result);

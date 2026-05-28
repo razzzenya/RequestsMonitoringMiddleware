@@ -18,7 +18,7 @@ ScenarioProps BuildScenario(string name, string[] domains, string[] expectedStat
         var response = await Http.Send(httpClient, request);
 
         return Array.IndexOf(expectedStatusCodes, response.StatusCode) >= 0
-            ? response
+            ? Response.Ok(statusCode: response.StatusCode, sizeBytes: response.SizeBytes)
             : Response.Fail(statusCode: response.StatusCode, message: $"Unexpected status {response.StatusCode}");
     })
     .WithWarmUpDuration(TimeSpan.FromSeconds(WarmupSeconds))

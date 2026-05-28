@@ -6,7 +6,7 @@ test suite: `nbomber_default_test_suite_name`
 
 test name: `nbomber_default_test_name`
 
-session id: `2026-05-27_15-57-47_a62483cf`
+session id: `2026-05-28_14-54-55_a19b202d`
 
 > scenario stats
 
@@ -14,11 +14,11 @@ session id: `2026-05-27_15-57-47_a62483cf`
 
 scenario: `allowed_domains`
 
-  - ok count: `524`
+  - ok count: `715`
 
-  - fail count: `256`
+  - fail count: `65`
 
-  - all data: `0.133` MB
+  - all data: `0.182` MB
 
   - duration: `00:01:30`
 
@@ -39,18 +39,18 @@ load simulations:
 |step|ok stats|
 |---|---|
 |name|`global information`|
-|request count|all = `780`, ok = `524`, RPS = `5.82`|
-|latency (ms)|min = `11.98`, mean = `2151.47`, max = `5008.45`, StdDev = `1663.12`|
-|latency percentile (ms)|p50 = `1989.63`, p75 = `3794.94`, p95 = `4800.51`, p99 = `4964.35`|
-|data transfer (KB)|min = `0.259`, mean = `0.260`, max = `0.263`, all = `0.133` MB|
+|request count|all = `780`, ok = `715`, RPS = `7.94`|
+|latency (ms)|min = `11.94`, mean = `1189.36`, max = `4989.67`, StdDev = `1316.95`|
+|latency percentile (ms)|p50 = `628.74`, p75 = `1709.06`, p95 = `4276.22`, p99 = `4902.91`|
+|data transfer (KB)|min = `0.259`, mean = `0.261`, max = `0.263`, all = `0.182` MB|
 
 
 |step|failures stats|
 |---|---|
 |name|`global information`|
-|request count|all = `780`, fail = `256`, RPS = `2.84`|
-|latency (ms)|min = `4999.98`, mean = `5008.26`, max = `5028.24`, StdDev = `4.96`|
-|latency percentile (ms)|p50 = `5009.41`, p75 = `5013.5`, p95 = `5017.6`, p99 = `5021.7`|
+|request count|all = `780`, fail = `65`, RPS = `0.72`|
+|latency (ms)|min = `5000.91`, mean = `5009.36`, max = `5016.65`, StdDev = `5.04`|
+|latency percentile (ms)|p50 = `5013.5`, p75 = `5017.6`, p95 = `5017.6`, p99 = `5017.6`|
 
 
 > status codes for scenario: `allowed_domains`
@@ -59,8 +59,8 @@ load simulations:
 
 |status code|count|message|
 |---|---|---|
-|OK|524||
-|-100|256|operation timeout|
+|OK|715||
+|-100|65|operation timeout|
 
 
 > scenario stats
@@ -69,11 +69,11 @@ load simulations:
 
 scenario: `greylisted_domains`
 
-  - ok count: `0`
+  - ok count: `757`
 
-  - fail count: `780`
+  - fail count: `23`
 
-  - all data: `0.095` MB
+  - all data: `0.190` MB
 
   - duration: `00:01:30`
 
@@ -94,18 +94,18 @@ load simulations:
 |step|ok stats|
 |---|---|
 |name|`global information`|
-|request count|all = `780`, ok = `0`, RPS = `0`|
-|latency (ms)|min = `0`, mean = `0`, max = `0`, StdDev = `0`|
-|latency percentile (ms)|p50 = `0`, p75 = `0`, p95 = `0`, p99 = `0`|
+|request count|all = `780`, ok = `757`, RPS = `8.41`|
+|latency (ms)|min = `5.73`, mean = `736.69`, max = `4845.51`, StdDev = `946.85`|
+|latency percentile (ms)|p50 = `318.72`, p75 = `961.02`, p95 = `2818.05`, p99 = `4120.58`|
+|data transfer (KB)|min = `0.257`, mean = `0.257`, max = `0.258`, all = `0.190` MB|
 
 
 |step|failures stats|
 |---|---|
 |name|`global information`|
-|request count|all = `780`, fail = `780`, RPS = `8.67`|
-|latency (ms)|min = `5.79`, mean = `1601.97`, max = `5013.78`, StdDev = `1340.61`|
-|latency percentile (ms)|p50 = `1395.71`, p75 = `2347.01`, p95 = `4800.51`, p99 = `5013.5`|
-|data transfer (KB)|min = `0.258`, mean = `0.124`, max = `0.258`, all = `0.095` MB|
+|request count|all = `780`, fail = `23`, RPS = `0.26`|
+|latency (ms)|min = `5000.42`, mean = `5008.6`, max = `5015.91`, StdDev = `4.05`|
+|latency percentile (ms)|p50 = `5009.41`, p75 = `5013.5`, p95 = `5013.5`, p99 = `5017.6`|
 
 
 > status codes for scenario: `greylisted_domains`
@@ -114,9 +114,8 @@ load simulations:
 
 |status code|count|message|
 |---|---|---|
-|-100|26|operation timeout|
-|PaymentRequired|376||
-|Unauthorized|378|Unexpected status Unauthorized|
+|PaymentRequired|757||
+|-100|23|operation timeout|
 
 
 > scenario stats
@@ -125,11 +124,11 @@ load simulations:
 
 scenario: `unknown_domains`
 
-  - ok count: `0`
+  - ok count: `768`
 
-  - fail count: `780`
+  - fail count: `12`
 
-  - all data: `0.186` MB
+  - all data: `0.188` MB
 
   - duration: `00:01:30`
 
@@ -150,18 +149,18 @@ load simulations:
 |step|ok stats|
 |---|---|
 |name|`global information`|
-|request count|all = `780`, ok = `0`, RPS = `0`|
-|latency (ms)|min = `0`, mean = `0`, max = `0`, StdDev = `0`|
-|latency percentile (ms)|p50 = `0`, p75 = `0`, p95 = `0`, p99 = `0`|
+|request count|all = `780`, ok = `768`, RPS = `8.53`|
+|latency (ms)|min = `5.84`, mean = `757.03`, max = `4881.34`, StdDev = `973.42`|
+|latency percentile (ms)|p50 = `327.42`, p75 = `976.38`, p95 = `2867.2`, p99 = `4198.4`|
+|data transfer (KB)|min = `0.25`, mean = `0.25`, max = `0.251`, all = `0.188` MB|
 
 
 |step|failures stats|
 |---|---|
 |name|`global information`|
-|request count|all = `780`, fail = `780`, RPS = `8.67`|
-|latency (ms)|min = `6.03`, mean = `1535.15`, max = `5012.93`, StdDev = `1248.9`|
-|latency percentile (ms)|p50 = `1405.95`, p75 = `2131.97`, p95 = `4517.89`, p99 = `5009.41`|
-|data transfer (KB)|min = `0.25`, mean = `0.243`, max = `0.251`, all = `0.186` MB|
+|request count|all = `780`, fail = `12`, RPS = `0.13`|
+|latency (ms)|min = `5001.97`, mean = `5007.75`, max = `5013.55`, StdDev = `4.19`|
+|latency percentile (ms)|p50 = `5009.41`, p75 = `5013.5`, p95 = `5013.5`, p99 = `5017.6`|
 
 
 > status codes for scenario: `unknown_domains`
@@ -170,7 +169,7 @@ load simulations:
 
 |status code|count|message|
 |---|---|---|
-|-100|20|operation timeout|
-|Unauthorized|760||
+|Unauthorized|768||
+|-100|12|operation timeout|
 
 
