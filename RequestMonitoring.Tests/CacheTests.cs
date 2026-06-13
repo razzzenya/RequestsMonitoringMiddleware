@@ -81,7 +81,7 @@ public class CacheTests
             })
             .Build();
 
-    private static HttpContext CreateHttpContext(string host)
+    private static DefaultHttpContext CreateHttpContext(string host)
     {
         var ctx = new DefaultHttpContext();
         ctx.Request.Headers["X-Test-Host"] = host;
@@ -197,7 +197,7 @@ public class CacheTests
         var afterFirst = interceptor.Count;
 
         // Инвалидируем напрямую через hybridCache (как делает DomainCacheService)
-        await hybridCache.RemoveAsync("Domain_invalidate.com");
+        await hybridCache.RemoveAsync("Domain_invalidate.com", TestContext.Current.CancellationToken);
 
         // Второй вызов после инвалидации — должен снова обратиться в БД
         await service.IsDomainAllowedAsync(CreateHttpContext("invalidate.com"));
@@ -269,7 +269,7 @@ public class CacheTests
             RequestCount = 5,
             LastResetAt = DateTime.UtcNow  // период ещё не истёк
         });
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var (_, mockMux) = CreateRedisMocks(counterValue: 6);
         var domainCacheMock = new Mock<IDomainCacheService>();
