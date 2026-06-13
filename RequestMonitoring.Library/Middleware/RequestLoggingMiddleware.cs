@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using RequestMonitoring.Library.Enitites;
-using RequestMonitoring.Library.Middleware.Services.OpenSearchLog;
 using System.Diagnostics;
 
 namespace RequestMonitoring.Library.Middleware;
@@ -18,7 +17,7 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
     /// </summary>
     /// <param name="context">Контекст HTTP-запроса</param>
     /// <param name="openSearchLogService">Сервис логирования в OpenSearch</param>
-    public async Task InvokeAsync(HttpContext context, IOpenSearchLogService openSearchLogService)
+    public async Task InvokeAsync(HttpContext context)
     {
         using var activity = ActivitySource.StartActivity("LogRequest", ActivityKind.Server);
 
@@ -59,6 +58,5 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
             "HTTP {Method} {Path} responded {StatusCode} in {DurationMs}ms",
             log.Method, log.Path, statusCode, log.DurationMs);
 
-        _ = openSearchLogService.IndexAsync(log);
     }
 }
