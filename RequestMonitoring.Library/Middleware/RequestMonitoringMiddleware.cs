@@ -36,6 +36,15 @@ public class RequestMonitoringMiddleware(RequestDelegate next, ILogger<RequestMo
                 var quotaResult = await quotaService.CheckAndIncrementAsync(domain);
                 activity?.SetTag("domain.quota", quotaResult.ToString());
 
+                if (quotaResult == QuotaCheckResult.NoQuota)
+                {
+                    logger.LogWarning("Domain {Domain} has no quota configured - denying access", domain);
+                    activity?.SetStatus(ActivityStatusCode.Error, "No quota configured");
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    await context.Response.WriteAsync("Access denied: domain has no quota configured.");
+                    return;
+                }
+
                 if (quotaResult == QuotaCheckResult.Exceeded)
                 {
                     logger.LogWarning("Domain {Domain} quota exceeded, domain moved to Greylisted", domain);
@@ -44,7 +53,8 @@ public class RequestMonitoringMiddleware(RequestDelegate next, ILogger<RequestMo
                     await context.Response.WriteAsync("Quota exceeded. This domain has been greylisted.");
                     return;
                 }
-                else if (quotaResult == QuotaCheckResult.TemporarilyExceeded)
+
+                if (quotaResult == QuotaCheckResult.TemporarilyExceeded)
                 {
                     logger.LogWarning("Domain {Domain} periodic quota temporarily exceeded", domain);
                     activity?.SetStatus(ActivityStatusCode.Error, "Periodic quota exceeded");

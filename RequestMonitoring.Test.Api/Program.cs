@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Extensions;
 using RequestMonitoring.Library.Middleware;
-using RequestMonitoring.Library.Middleware.Services.DomainCheck;
 using RequestMonitoring.Library.Middleware.Services.DomainCache;
+using RequestMonitoring.Library.Middleware.Services.DomainCheck;
 using RequestMonitoring.Library.Middleware.Services.QuotaCache;
 using RequestMonitoring.Library.Middleware.Services.QuotaCheck;
 

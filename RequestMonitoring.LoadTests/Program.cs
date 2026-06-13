@@ -23,17 +23,17 @@ ScenarioProps BuildScenario(string name, string[] domains, string[] expectedStat
     })
     .WithWarmUpDuration(TimeSpan.FromSeconds(WarmupSeconds))
     .WithLoadSimulations(
-        Simulation.RampingInject(rate: 5,      interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(StepSeconds)),
-        Simulation.Inject(rate: 5,             interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(StepSeconds)),
-        Simulation.RampingInject(rate: 10,     interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(StepSeconds)),
-        Simulation.Inject(rate: 10,            interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(StepSeconds)),
+        Simulation.RampingInject(rate: 5, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(StepSeconds)),
+        Simulation.Inject(rate: 5, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(StepSeconds)),
+        Simulation.RampingInject(rate: 10, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(StepSeconds)),
+        Simulation.Inject(rate: 10, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(StepSeconds)),
         Simulation.RampingInject(rate: MaxRps, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(StepSeconds)),
-        Simulation.Inject(rate: MaxRps,        interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(StepSeconds))
+        Simulation.Inject(rate: MaxRps, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(StepSeconds))
     );
 
-var allowedScenario    = BuildScenario("allowed_domains",    ["allowed.com", "lol.com"],              ["OK", "PaymentRequired", "TooManyRequests"]);
-var greylistedScenario = BuildScenario("greylisted_domains", ["blacklisted.com", "greylisted.com"],   ["PaymentRequired"]);
-var unknownScenario    = BuildScenario("unknown_domains",    ["unknown.com", "notexist.com"],          ["Unauthorized"]);
+var allowedScenario = BuildScenario("allowed_domains", ["allowed.com", "lol.com"], ["OK", "PaymentRequired", "TooManyRequests"]);
+var greylistedScenario = BuildScenario("greylisted_domains", ["blacklisted.com", "greylisted.com"], ["PaymentRequired"]);
+var unknownScenario = BuildScenario("unknown_domains", ["unknown.com", "notexist.com"], ["Unauthorized"]);
 
 NBomberRunner
     .RegisterScenarios(allowedScenario, greylistedScenario, unknownScenario)

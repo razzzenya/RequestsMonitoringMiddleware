@@ -21,12 +21,12 @@ public abstract class QuotaPolicy
     /// </summary>
     public static QuotaPolicy Create(QuotaType type) => type switch
     {
-        QuotaType.Unlimited         => new UnlimitedQuotaPolicy(),
-        QuotaType.Periodic          => new PeriodicQuotaPolicy(),
-        QuotaType.Total             => new TotalQuotaPolicy(),
+        QuotaType.Unlimited => new UnlimitedQuotaPolicy(),
+        QuotaType.Periodic => new PeriodicQuotaPolicy(),
+        QuotaType.Total => new TotalQuotaPolicy(),
         QuotaType.ExpiringUnlimited => new ExpiringUnlimitedQuotaPolicy(),
-        QuotaType.ExpiringTotal     => new ExpiringTotalQuotaPolicy(),
-        QuotaType.ExpiringPeriodic  => new ExpiringPeriodicQuotaPolicy(),
+        QuotaType.ExpiringTotal => new ExpiringTotalQuotaPolicy(),
+        QuotaType.ExpiringPeriodic => new ExpiringPeriodicQuotaPolicy(),
         _ => throw new ArgumentOutOfRangeException(nameof(type), $"Unknown quota type: {type}")
     };
 
