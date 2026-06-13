@@ -60,7 +60,7 @@ public class DomainCheckService(IConfiguration configuration, HybridCache cache,
         }
 
         logger.LogWarning("Domain {Domain} not found in database. Returning blocked status", safeDomainForLog);
-        return new DomainStatusType { Id = 3, Name = "Unauthorized" };
+        return new DomainStatusType { Id = 3, Name = "Forbidden" };
     }
 
     private static string SanitizeForLog(string? value)

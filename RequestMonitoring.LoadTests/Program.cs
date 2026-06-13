@@ -31,9 +31,9 @@ ScenarioProps BuildScenario(string name, string[] domains, string[] expectedStat
         Simulation.Inject(rate: MaxRps, interval: TimeSpan.FromSeconds(1), during: TimeSpan.FromSeconds(StepSeconds))
     );
 
-var allowedScenario = BuildScenario("allowed_domains", ["allowed.com", "lol.com"], ["OK", "PaymentRequired", "TooManyRequests"]);
+var allowedScenario = BuildScenario("allowed_domains", ["allowed.com", "lol.com"], ["OK", "PaymentRequired", "TooManyRequests", "Forbidden"]);
 var greylistedScenario = BuildScenario("greylisted_domains", ["blacklisted.com", "greylisted.com"], ["PaymentRequired"]);
-var unknownScenario = BuildScenario("unknown_domains", ["unknown.com", "notexist.com"], ["Unauthorized"]);
+var unknownScenario = BuildScenario("unknown_domains", ["unknown.com", "notexist.com"], ["Forbidden"]);
 
 NBomberRunner
     .RegisterScenarios(allowedScenario, greylistedScenario, unknownScenario)

@@ -41,7 +41,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<RequestMonitoringMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthorization();

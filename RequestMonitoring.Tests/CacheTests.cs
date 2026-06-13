@@ -205,7 +205,7 @@ public class CacheTests
     }
 
     [Fact]
-    public async Task DomainCheck_UnknownDomain_ReturnsUnauthorized()
+    public async Task DomainCheck_UnknownDomain_ReturnsForbidden()
     {
         var (ctx, _, connection) = CreateDbContext();
         await using var _ = connection;
@@ -216,8 +216,8 @@ public class CacheTests
         var result1 = await service.IsDomainAllowedAsync(CreateHttpContext("unknown.com"));
         var result2 = await service.IsDomainAllowedAsync(CreateHttpContext("unknown.com"));
 
-        Assert.Equal("Unauthorized", result1.Name);
-        Assert.Equal("Unauthorized", result2.Name);
+        Assert.Equal("Forbidden", result1.Name);
+        Assert.Equal("Forbidden", result2.Name);
     }
 
     // ── QuotaService cache tests ──────────────────────────────────────────────

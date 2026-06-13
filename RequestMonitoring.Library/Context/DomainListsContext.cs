@@ -20,7 +20,7 @@ public class DomainListsContext : DbContext
         modelBuilder.Entity<DomainStatusType>().HasData(
             new DomainStatusType { Id = 1, Name = "Allowed" },
             new DomainStatusType { Id = 2, Name = "Greylisted" },
-            new DomainStatusType { Id = 3, Name = "Unauthorized" }
+            new DomainStatusType { Id = 3, Name = "Forbidden" }
         );
 
         modelBuilder.Entity<Domain>()

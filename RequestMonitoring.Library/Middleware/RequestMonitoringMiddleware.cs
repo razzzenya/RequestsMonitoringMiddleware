@@ -77,7 +77,7 @@ public class RequestMonitoringMiddleware(RequestDelegate next, ILogger<RequestMo
             case 3:
                 logger.LogWarning("Domain {Domain} is unknown", domain);
                 activity?.SetStatus(ActivityStatusCode.Error, "Unknown Domain");
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 await context.Response.WriteAsync("This domain is forbidden.");
                 return;
         }
