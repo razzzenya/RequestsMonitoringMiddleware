@@ -4,6 +4,7 @@ using RequestMonitoring.Library.Dto;
 using RequestMonitoring.Library.Middleware.Services.DomainCheck;
 using RequestMonitoring.Library.Middleware.Services.QuotaCheck;
 using System.Diagnostics;
+using RequestMonitoring.Library.Shared;
 
 namespace RequestMonitoring.Library.Middleware;
 
@@ -24,7 +25,7 @@ public class RequestMonitoringMiddleware(RequestDelegate next, ILogger<RequestMo
         var domain = context.Request.Headers["X-Test-Host"].FirstOrDefault() ?? context.Request.Host.Host;
         activity?.SetTag("domain.name", domain);
 
-        logger.LogInformation("Checking domain access for {Domain}", domain);
+        logger.LogInformation("Checking domain access for {Domain}", LogSanitizer.Sanitize(domain));
 
         var entry = await domainCheckService.IsDomainAllowedAsync(context);
 
@@ -38,7 +39,7 @@ public class RequestMonitoringMiddleware(RequestDelegate next, ILogger<RequestMo
 
                 if (quotaResult == QuotaCheckResult.NoQuota)
                 {
-                    logger.LogWarning("Domain {Domain} has no quota configured - denying access", domain);
+                    logger.LogWarning("Domain {Domain} has no quota configured - denying access", LogSanitizer.Sanitize(domain));
                     activity?.SetStatus(ActivityStatusCode.Error, "No quota configured");
                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     await context.Response.WriteAsync("Access denied: domain has no quota configured.");
@@ -47,7 +48,7 @@ public class RequestMonitoringMiddleware(RequestDelegate next, ILogger<RequestMo
 
                 if (quotaResult == QuotaCheckResult.Exceeded)
                 {
-                    logger.LogWarning("Domain {Domain} quota exceeded, domain moved to Greylisted", domain);
+                    logger.LogWarning("Domain {Domain} quota exceeded, domain moved to Greylisted", LogSanitizer.Sanitize(domain));
                     activity?.SetStatus(ActivityStatusCode.Error, "Quota exceeded");
                     context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
                     await context.Response.WriteAsync("Quota exceeded. This domain has been greylisted.");
@@ -56,26 +57,26 @@ public class RequestMonitoringMiddleware(RequestDelegate next, ILogger<RequestMo
 
                 if (quotaResult == QuotaCheckResult.TemporarilyExceeded)
                 {
-                    logger.LogWarning("Domain {Domain} periodic quota temporarily exceeded", domain);
+                    logger.LogWarning("Domain {Domain} periodic quota temporarily exceeded", LogSanitizer.Sanitize(domain));
                     activity?.SetStatus(ActivityStatusCode.Error, "Periodic quota exceeded");
                     context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
                     await context.Response.WriteAsync("Too many requests. Quota will reset at the end of the current period.");
                     return;
                 }
 
-                logger.LogInformation("Domain {Domain} is whitelisted - allowing access", domain);
+                logger.LogInformation("Domain {Domain} is whitelisted - allowing access", LogSanitizer.Sanitize(domain));
                 await next(context);
                 return;
 
             case DomainStatus.Greylisted:
-                logger.LogWarning("Domain {Domain} is greylisted - payment required", domain);
+                logger.LogWarning("Domain {Domain} is greylisted - payment required", LogSanitizer.Sanitize(domain));
                 activity?.SetStatus(ActivityStatusCode.Error, "Domain greylisted");
                 context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
                 await context.Response.WriteAsync("This domain is greylisted.");
                 return;
 
             case DomainStatus.Forbidden:
-                logger.LogWarning("Domain {Domain} is unknown", domain);
+                logger.LogWarning("Domain {Domain} is unknown", LogSanitizer.Sanitize(domain));
                 activity?.SetStatus(ActivityStatusCode.Error, "Unknown Domain");
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 await context.Response.WriteAsync("This domain is forbidden.");
