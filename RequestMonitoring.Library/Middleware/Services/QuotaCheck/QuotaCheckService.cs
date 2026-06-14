@@ -34,12 +34,12 @@ public class QuotaCheckService(IConnectionMultiplexer redis, DomainListsContext 
 
         if (result == QuotaCheckResult.Exceeded)
         {
-            logger.LogWarning("Quota exceeded for domain {Host}, moving to Greylisted", host);
+            logger.LogWarning("Quota exceeded for domain {Host}, moving to Greylisted", LogSanitizer.Sanitize(host));
             await MoveToGreylistedAsync(host, quotaMeta.DomainId);
         }
         else if (result == QuotaCheckResult.TemporarilyExceeded)
         {
-            logger.LogWarning("Periodic quota temporarily exceeded for domain {Host}", host);
+            logger.LogWarning("Periodic quota temporarily exceeded for domain {Host}", LogSanitizer.Sanitize(host));
         }
 
         return result;
@@ -91,11 +91,13 @@ public class QuotaCheckService(IConnectionMultiplexer redis, DomainListsContext 
                 quotaCacheService.DeleteCounterAsync(domainId)
             );
 
-            logger.LogWarning("Domain {Host} moved to Greylisted due to quota exceeded", host);
+            logger.LogWarning("Domain {Host} moved to Greylisted due to quota exceeded", LogSanitizer.Sanitize(host));
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to move domain {Host} to Greylisted", host);
+            logger.LogError(ex, "Failed to move domain {Host} to Greylisted", LogSanitizer.Sanitize(host));
         }
     }
+
+
 }

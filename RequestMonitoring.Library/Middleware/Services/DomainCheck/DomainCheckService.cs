@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Dto;
-using System.Text;
+using RequestMonitoring.Library.Shared;
 
 namespace RequestMonitoring.Library.Middleware.Services.DomainCheck;
 
@@ -34,7 +34,7 @@ public class DomainCheckService(IConfiguration configuration, HybridCache cache,
         );
 
         if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("Domain {Domain} status: {Status}", SanitizeForLog(domain), entry.Status);
+            logger.LogInformation("Domain {Domain} status: {Status}", LogSanitizer.Sanitize(domain), entry.Status);
         return entry;
     }
 
@@ -47,7 +47,7 @@ public class DomainCheckService(IConfiguration configuration, HybridCache cache,
 
         if (domainEntity?.DomainStatusType is null)
         {
-            logger.LogWarning("Domain {Domain} not found in database", SanitizeForLog(domain));
+            logger.LogWarning("Domain {Domain} not found in database", LogSanitizer.Sanitize(domain));
             return new DomainCacheEntry(DomainStatus.Forbidden, null);
         }
 
@@ -65,17 +65,5 @@ public class DomainCheckService(IConfiguration configuration, HybridCache cache,
         return new DomainCacheEntry(status, quotaMeta);
     }
 
-    private static string SanitizeForLog(string? value)
-    {
-        if (string.IsNullOrEmpty(value))
-            return string.Empty;
 
-        var sb = new StringBuilder(value.Length);
-        foreach (var ch in value)
-        {
-            if (!char.IsControl(ch))
-                sb.Append(ch);
-        }
-        return sb.ToString();
-    }
 }
