@@ -11,7 +11,7 @@ public class QuotaCacheService(IDistributedCache cache, ILogger<QuotaCacheServic
     /// <summary>
     /// Удаляет счётчик квоты из кэша по идентификатору домена
     /// </summary>
-    public async Task InvalidateQuotaAsync(int domainId)
+    public async Task DeleteCounterAsync(int domainId)
     {
         try
         {

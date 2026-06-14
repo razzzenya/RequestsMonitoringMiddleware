@@ -20,6 +20,8 @@ builder.Services.AddDbContext<DomainListsContext>(opt =>
 
 builder.AddRedisDistributedCache("cache");
 
+builder.Services.AddHybridCache();
+
 builder.Services.AddScoped<IDomainCacheService, DomainCacheService>();
 builder.Services.AddScoped<IQuotaCacheService, QuotaCacheService>();
 

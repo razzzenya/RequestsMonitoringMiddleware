@@ -1,17 +1,17 @@
 using Microsoft.AspNetCore.Http;
-using RequestMonitoring.Library.Enitites;
+using RequestMonitoring.Library.Dto;
 
 namespace RequestMonitoring.Library.Middleware.Services.DomainCheck;
 
 /// <summary>
-/// Интерфейс сервиса проверки статуса домена
+/// Сервис проверки статуса домена
 /// </summary>
 public interface IDomainCheckService
 {
     /// <summary>
-    /// Проверяет статус домена из контекста запроса
+    /// Возвращает статус домена и метаданные квоты из кэша или БД
     /// </summary>
     /// <param name="context">Контекст HTTP-запроса</param>
-    /// <returns>Статус домена</returns>
-    Task<DomainStatusType> IsDomainAllowedAsync(HttpContext context);
+    /// <returns>Статус домена и метаданные</returns>
+    Task<DomainCacheEntry> IsDomainAllowedAsync(HttpContext context);
 }

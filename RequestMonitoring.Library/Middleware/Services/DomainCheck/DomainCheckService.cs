@@ -4,81 +4,78 @@ using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RequestMonitoring.Library.Context;
-using RequestMonitoring.Library.Enitites;
+using RequestMonitoring.Library.Dto;
 using System.Text;
 
 namespace RequestMonitoring.Library.Middleware.Services.DomainCheck;
 
 /// <summary>
-/// Сервис проверки статуса домена
+/// Сервис проверки статуса домена с кэшированием
 /// </summary>
 public class DomainCheckService(IConfiguration configuration, HybridCache cache, DomainListsContext dbcontext, ILogger<DomainCheckService> logger) : IDomainCheckService
 {
     private readonly int cacheExpirationMinutes = configuration.GetValue("CacheSettings:ExpirationMinutes", 10);
 
-    /// <summary>
-    /// Проверяет статус домена из контекста запроса
-    /// </summary>
-    public async Task<DomainStatusType> IsDomainAllowedAsync(HttpContext context)
+    /// <inheritdoc/>
+    public async Task<DomainCacheEntry> IsDomainAllowedAsync(HttpContext context)
     {
         var domain = context.Request.Headers["X-Test-Host"].FirstOrDefault() ?? context.Request.Host.Host;
-        var safeDomainForLog = SanitizeForLog(domain);
         var cacheKey = $"Domain_{domain}";
 
-        var cancellationToken = context.RequestAborted;
-
-        var status = await cache.GetOrCreateAsync(
+        var entry = await cache.GetOrCreateAsync(
             cacheKey,
-            async ct => await GetDomainStatusFromDatabaseAsync(domain, ct),
+            async ct => await GetDomainEntryFromDatabaseAsync(domain, ct),
             new HybridCacheEntryOptions
             {
                 Expiration = TimeSpan.FromMinutes(cacheExpirationMinutes),
                 LocalCacheExpiration = TimeSpan.FromMinutes(cacheExpirationMinutes)
             },
-            cancellationToken: cancellationToken
+            cancellationToken: context.RequestAborted
         );
 
-        logger.LogInformation("Domain {Domain} status: {Status}", safeDomainForLog, status.Name);
-        return status;
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("Domain {Domain} status: {Status}", SanitizeForLog(domain), entry.Status);
+        return entry;
     }
 
-    /// <summary>
-    /// Получает статус домена из базы данных
-    /// </summary>
-    private async Task<DomainStatusType> GetDomainStatusFromDatabaseAsync(string domain, CancellationToken ct = default)
+    private async Task<DomainCacheEntry> GetDomainEntryFromDatabaseAsync(string domain, CancellationToken ct)
     {
-        var safeDomainForLog = SanitizeForLog(domain);
         var domainEntity = await dbcontext.Domains
             .Include(d => d.DomainStatusType)
+            .Include(d => d.Quota)
             .FirstOrDefaultAsync(d => d.Host == domain, ct);
 
-        if (domainEntity?.DomainStatusType != null)
+        if (domainEntity?.DomainStatusType is null)
         {
-            logger.LogInformation("Domain {Domain} found in database with status {Status}",
-                safeDomainForLog, domainEntity.DomainStatusType.Name);
-            return domainEntity.DomainStatusType;
+            logger.LogWarning("Domain {Domain} not found in database", SanitizeForLog(domain));
+            return new DomainCacheEntry(DomainStatus.Forbidden, null);
         }
 
-        logger.LogWarning("Domain {Domain} not found in database. Returning blocked status", safeDomainForLog);
-        return new DomainStatusType { Id = 3, Name = "Forbidden" };
+        var status = domainEntity.DomainStatusType.Id switch
+        {
+            1 => DomainStatus.Allowed,
+            2 => DomainStatus.Greylisted,
+            _ => DomainStatus.Forbidden
+        };
+
+        QuotaMetaDto? quotaMeta = domainEntity.Quota is { } q
+            ? new QuotaMetaDto(q.Id, q.DomainId, q.Type, q.MaxRequests, q.PeriodSeconds, q.ExpiresAt)
+            : null;
+
+        return new DomainCacheEntry(status, quotaMeta);
     }
 
     private static string SanitizeForLog(string? value)
     {
         if (string.IsNullOrEmpty(value))
-        {
             return string.Empty;
-        }
 
         var sb = new StringBuilder(value.Length);
         foreach (var ch in value)
         {
             if (!char.IsControl(ch))
-            {
                 sb.Append(ch);
-            }
         }
-
         return sb.ToString();
     }
 }

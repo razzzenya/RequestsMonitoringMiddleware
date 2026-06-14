@@ -8,5 +8,5 @@ public interface IQuotaCacheService
     /// <summary>
     /// Удаляет счётчик квоты из кэша по идентификатору домена
     /// </summary>
-    Task InvalidateQuotaAsync(int domainId);
+    Task DeleteCounterAsync(int domainId);
 }

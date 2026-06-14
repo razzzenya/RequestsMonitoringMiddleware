@@ -15,7 +15,7 @@ builder.Services.AddDbContext<DomainListsContext>(opt =>
     opt.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddScoped<IDomainCheckService, DomainCheckService>();
-builder.Services.AddScoped<IQuotaService, QuotaService>();
+builder.Services.AddScoped<IQuotaCheckService, QuotaCheckService>();
 builder.Services.AddScoped<IDomainCacheService, DomainCacheService>();
 builder.Services.AddScoped<IQuotaCacheService, QuotaCacheService>();
 builder.AddRedisDistributedCache("cache");

@@ -1,3 +1,5 @@
+using RequestMonitoring.Library.Dto;
+
 namespace RequestMonitoring.Library.Middleware.Services.QuotaCheck;
 
 public enum QuotaCheckResult
@@ -23,10 +25,14 @@ public enum QuotaCheckResult
     TemporarilyExceeded
 }
 
-public interface IQuotaService
+/// <summary>
+/// Сервис проверки и инкремента квоты домена
+/// </summary>
+public interface IQuotaCheckService
 {
     /// <summary>
-    /// Проверяет квоту домена и инкрементирует счётчик при успехе
+    /// Проверяет квоту домена и инкрементирует счётчик.
+    /// Принимает метаданные квоты из кэша — при null возвращает NoQuota.
     /// </summary>
-    Task<QuotaCheckResult> CheckAndIncrementAsync(string host);
+    Task<QuotaCheckResult> CheckAndIncrementAsync(string host, QuotaMetaDto? quotaMeta);
 }

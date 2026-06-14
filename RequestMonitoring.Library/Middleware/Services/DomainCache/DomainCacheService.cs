@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using RequestMonitoring.Library.Context;
 
@@ -8,7 +8,7 @@ namespace RequestMonitoring.Library.Middleware.Services.DomainCache;
 /// <summary>
 /// Сервис для управления кэшем доменов
 /// </summary>
-public class DomainCacheService(IDistributedCache cache, DomainListsContext context, ILogger<DomainCacheService> logger) : IDomainCacheService
+public class DomainCacheService(HybridCache cache, DomainListsContext context, ILogger<DomainCacheService> logger) : IDomainCacheService
 {
     /// <summary>
     /// Удаляет из кэша конкретный домен
@@ -17,8 +17,7 @@ public class DomainCacheService(IDistributedCache cache, DomainListsContext cont
     {
         try
         {
-            var cacheKey = $"Domain_{host}";
-            await cache.RemoveAsync(cacheKey);
+            await cache.RemoveAsync($"Domain_{host}");
             logger.LogInformation("Cache invalidated for domain: {Host}", host);
         }
         catch (Exception ex)
@@ -38,13 +37,7 @@ public class DomainCacheService(IDistributedCache cache, DomainListsContext cont
                 .Select(d => d.Host)
                 .ToListAsync();
 
-            var tasks = allDomains.Select(host =>
-            {
-                var cacheKey = $"Domain_{host}";
-                return cache.RemoveAsync(cacheKey);
-            });
-
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(allDomains.Select(host => cache.RemoveAsync($"Domain_{host}").AsTask()));
 
             logger.LogInformation("Cache invalidated for all {Count} domains", allDomains.Count);
         }

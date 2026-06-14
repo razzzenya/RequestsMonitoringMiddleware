@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using RequestMonitoring.Library.Context;
+using RequestMonitoring.Library.Dto;
 using RequestMonitoring.Library.Enitites;
 using RequestMonitoring.Library.Middleware.Services.DomainCache;
 using RequestMonitoring.Library.Middleware.Services.DomainCheck;
@@ -144,6 +145,9 @@ public class CacheTests
 
     // ── DomainCheckService cache tests ────────────────────────────────────────
 
+    /// <summary>
+    /// Второй запрос к тому же домену не обращается в БД — результат берётся из кэша
+    /// </summary>
     [Fact]
     public async Task DomainCheck_SecondCall_DoesNotHitDatabase()
     {
@@ -162,6 +166,9 @@ public class CacheTests
         Assert.Equal(afterFirst, interceptor.Count);
     }
 
+    /// <summary>
+    /// Каждый новый домен при первом запросе обращается в БД — кэш изолирован по ключу домена
+    /// </summary>
     [Fact]
     public async Task DomainCheck_DifferentDomains_EachHitsDatabase()
     {
@@ -181,6 +188,9 @@ public class CacheTests
         Assert.True(interceptor.Count > afterFirst);
     }
 
+    /// <summary>
+    /// После инвалидации через HybridCache следующий запрос снова идёт в БД — L1 и L2 очищены
+    /// </summary>
     [Fact]
     public async Task DomainCheck_AfterInvalidation_HitsDatabaseAgain()
     {
@@ -204,6 +214,9 @@ public class CacheTests
         Assert.True(interceptor.Count > afterFirst);
     }
 
+    /// <summary>
+    /// Домен отсутствующий в БД возвращает Forbidden — результат кэшируется и повторный запрос не идёт в БД
+    /// </summary>
     [Fact]
     public async Task DomainCheck_UnknownDomain_ReturnsForbidden()
     {
@@ -216,12 +229,15 @@ public class CacheTests
         var result1 = await service.IsDomainAllowedAsync(CreateHttpContext("unknown.com"));
         var result2 = await service.IsDomainAllowedAsync(CreateHttpContext("unknown.com"));
 
-        Assert.Equal("Forbidden", result1.Name);
-        Assert.Equal("Forbidden", result2.Name);
+        Assert.Equal(DomainStatus.Forbidden, result1.Status);
+        Assert.Equal(DomainStatus.Forbidden, result2.Status);
     }
 
     // ── QuotaService cache tests ──────────────────────────────────────────────
 
+    /// <summary>
+    /// При превышении квоты вызываются инвалидация домена в HybridCache и сброс Redis-счётчика
+    /// </summary>
     [Fact]
     public async Task QuotaService_WhenExceeded_InvalidatesBothDomainAndQuotaCache()
     {
@@ -236,20 +252,24 @@ public class CacheTests
         var domainCacheMock = new Mock<IDomainCacheService>();
         domainCacheMock.Setup(s => s.InvalidateDomainAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
         var quotaCacheMock = new Mock<IQuotaCacheService>();
-        quotaCacheMock.Setup(s => s.InvalidateQuotaAsync(It.IsAny<int>())).Returns(Task.CompletedTask);
+        quotaCacheMock.Setup(s => s.DeleteCounterAsync(It.IsAny<int>())).Returns(Task.CompletedTask);
 
-        var service = new QuotaService(mockMux.Object, ctx, CreateConfig(), domainCacheMock.Object,
-            quotaCacheMock.Object, NullLogger<QuotaService>.Instance);
+        var service = new QuotaCheckService(mockMux.Object, ctx, CreateConfig(), domainCacheMock.Object,
+            quotaCacheMock.Object, NullLogger<QuotaCheckService>.Instance);
 
-        var result = await service.CheckAndIncrementAsync("quota-exceed.com");
+        var quotaMeta = new QuotaMetaDto(1, domain.Id, QuotaType.Total, 5, null, null);
+        var result = await service.CheckAndIncrementAsync("quota-exceed.com", quotaMeta);
 
         Assert.Equal(QuotaCheckResult.Exceeded, result);
 
         // При превышении квоты оба кэша должны быть инвалидированы
         domainCacheMock.Verify(s => s.InvalidateDomainAsync("quota-exceed.com"), Times.Once);
-        quotaCacheMock.Verify(s => s.InvalidateQuotaAsync(domain.Id), Times.Once);
+        quotaCacheMock.Verify(s => s.DeleteCounterAsync(domain.Id), Times.Once);
     }
 
+    /// <summary>
+    /// При временном превышении периодической квоты кэш не инвалидируется — домен остаётся Allowed
+    /// </summary>
     [Fact]
     public async Task QuotaService_WhenTemporarilyExceeded_DoesNotInvalidateCache()
     {
@@ -274,15 +294,16 @@ public class CacheTests
         var domainCacheMock = new Mock<IDomainCacheService>();
         var quotaCacheMock = new Mock<IQuotaCacheService>();
 
-        var service = new QuotaService(mockMux.Object, ctx, CreateConfig(), domainCacheMock.Object,
-            quotaCacheMock.Object, NullLogger<QuotaService>.Instance);
+        var service = new QuotaCheckService(mockMux.Object, ctx, CreateConfig(), domainCacheMock.Object,
+            quotaCacheMock.Object, NullLogger<QuotaCheckService>.Instance);
 
-        var result = await service.CheckAndIncrementAsync("periodic.com");
+        var quotaMeta = new QuotaMetaDto(1, domain.Id, QuotaType.Periodic, 5, 3600, null);
+        var result = await service.CheckAndIncrementAsync("periodic.com", quotaMeta);
 
         Assert.Equal(QuotaCheckResult.TemporarilyExceeded, result);
 
         // При временном превышении кэш НЕ инвалидируется — домен остаётся Allowed
         domainCacheMock.Verify(s => s.InvalidateDomainAsync(It.IsAny<string>()), Times.Never);
-        quotaCacheMock.Verify(s => s.InvalidateQuotaAsync(It.IsAny<int>()), Times.Never);
+        quotaCacheMock.Verify(s => s.DeleteCounterAsync(It.IsAny<int>()), Times.Never);
     }
 }
