@@ -4,11 +4,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace RequestMonitoring.Library.Context;
 
-public class DomainListsContext : DbContext
+[method: SetsRequiredMembers]
+public class DomainListsContext(DbContextOptions<DomainListsContext> options) : DbContext(options)
 {
-    [SetsRequiredMembers]
-    public DomainListsContext(DbContextOptions<DomainListsContext> options) : base(options) { }
-
     public required DbSet<Domain> Domains { get; set; }
     public required DbSet<DomainStatusType> DomainStatusTypes { get; set; }
     public required DbSet<Quota> Quotas { get; set; }

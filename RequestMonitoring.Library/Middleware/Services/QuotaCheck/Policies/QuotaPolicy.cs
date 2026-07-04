@@ -36,7 +36,6 @@ public abstract class QuotaPolicy
     {
         var cacheKey = GetCacheKey(quota);
 
-        // Seed the key from DB if it doesn't exist (e.g. after Redis restart)
         await db.StringSetAsync(cacheKey, quota.RequestCount, when: When.NotExists);
 
         return await db.StringIncrementAsync(cacheKey);
