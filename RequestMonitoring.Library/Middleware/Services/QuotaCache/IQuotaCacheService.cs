@@ -1,12 +1,12 @@
 namespace RequestMonitoring.Library.Middleware.Services.QuotaCache;
 
 /// <summary>
-/// Сервис для управления кэшем счётчиков квот
+/// Сервис для управления кэшем runtime-состояния квот
 /// </summary>
 public interface IQuotaCacheService
 {
     /// <summary>
-    /// Удаляет счётчик квоты из кэша по идентификатору домена
+    /// Удаляет runtime-состояние квоты домена из Redis (счётчик и lastReset)
     /// </summary>
-    Task DeleteCounterAsync(int domainId);
+    Task InvalidateQuotaAsync(int domainId);
 }

@@ -16,6 +16,8 @@ builder.Services.AddDbContext<DomainListsContext>(opt =>
 
 builder.Services.AddScoped<IDomainCheckService, DomainCheckService>();
 builder.Services.AddScoped<IQuotaCheckService, QuotaCheckService>();
+builder.Services.AddSingleton<IQuotaCounter, RedisQuotaCounter>();
+builder.Services.AddHostedService<QuotaFlushBackgroundService>();
 builder.Services.AddScoped<IDomainCacheService, DomainCacheService>();
 builder.Services.AddScoped<IQuotaCacheService, QuotaCacheService>();
 builder.AddRedisDistributedCache("cache");

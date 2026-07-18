@@ -6,6 +6,7 @@ using RequestMonitoring.Library.Enitites;
 using RequestMonitoring.Library.Extensions;
 using RequestMonitoring.Library.Middleware.Services.DomainCache;
 using RequestMonitoring.Library.Middleware.Services.QuotaCache;
+using RequestMonitoring.Library.Middleware.Services.QuotaCheck;
 using Scalar.AspNetCore;
 
 TypeAdapterConfig<Domain, DomainDto>.NewConfig()
@@ -24,6 +25,8 @@ builder.Services.AddHybridCache();
 
 builder.Services.AddScoped<IDomainCacheService, DomainCacheService>();
 builder.Services.AddScoped<IQuotaCacheService, QuotaCacheService>();
+builder.Services.AddSingleton<IQuotaCounter, RedisQuotaCounter>();
+builder.Services.AddHostedService<QuotaFlushBackgroundService>();
 
 builder.Services.AddCors(options =>
 {

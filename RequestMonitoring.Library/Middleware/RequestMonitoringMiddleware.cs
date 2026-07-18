@@ -3,8 +3,8 @@ using Microsoft.Extensions.Logging;
 using RequestMonitoring.Library.Dto;
 using RequestMonitoring.Library.Middleware.Services.DomainCheck;
 using RequestMonitoring.Library.Middleware.Services.QuotaCheck;
-using System.Diagnostics;
 using RequestMonitoring.Library.Shared;
+using System.Diagnostics;
 
 namespace RequestMonitoring.Library.Middleware;
 
@@ -23,19 +23,15 @@ public class RequestMonitoringMiddleware(RequestDelegate next, ILogger<RequestMo
         using var activity = ActivitySource.StartActivity("DomainCheck", ActivityKind.Server);
 
         var domain = context.Request.Headers["X-Test-Host"].FirstOrDefault() ?? context.Request.Host.Host;
-        activity?.SetTag("domain.name", domain);
 
-        logger.LogInformation("Checking domain access for {Domain}", LogSanitizer.Sanitize(domain));
+        logger.LogDebug("Checking domain access for {Domain}", LogSanitizer.Sanitize(domain));
 
         var entry = await domainCheckService.IsDomainAllowedAsync(context);
-
-        activity?.SetTag("domain.status", entry.Status.ToString());
 
         switch (entry.Status)
         {
             case DomainStatus.Allowed:
                 var quotaResult = await quotaService.CheckAndIncrementAsync(domain, entry.Quota);
-                activity?.SetTag("domain.quota", quotaResult.ToString());
 
                 if (quotaResult == QuotaCheckResult.NoQuota)
                 {
@@ -64,7 +60,7 @@ public class RequestMonitoringMiddleware(RequestDelegate next, ILogger<RequestMo
                     return;
                 }
 
-                logger.LogInformation("Domain {Domain} is whitelisted - allowing access", LogSanitizer.Sanitize(domain));
+                logger.LogDebug("Domain {Domain} is whitelisted - allowing access", LogSanitizer.Sanitize(domain));
                 await next(context);
                 return;
 

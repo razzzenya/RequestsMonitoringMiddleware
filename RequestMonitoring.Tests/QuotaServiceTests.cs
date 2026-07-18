@@ -1,6 +1,5 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using RequestMonitoring.Library.Context;
@@ -10,7 +9,6 @@ using RequestMonitoring.Library.Middleware.Services.DomainCache;
 using RequestMonitoring.Library.Middleware.Services.QuotaCache;
 using RequestMonitoring.Library.Middleware.Services.QuotaCheck;
 using RequestMonitoring.Library.Shared;
-using StackExchange.Redis;
 
 namespace RequestMonitoring.Tests;
 
@@ -34,44 +32,27 @@ public class QuotaServiceTests
         return (ctx, connection);
     }
 
-    private static (Mock<IDatabase> MockDb, Mock<IConnectionMultiplexer> MockRedis) CreateRedisMocks(
-        Func<long> incrementCounter)
+    private static Mock<IQuotaCounter> CreateQuotaCounterMock(Func<long> incrementCounter)
     {
-        var mockDb = new Mock<IDatabase>();
+        var mock = new Mock<IQuotaCounter>();
 
-        mockDb
-            .Setup(d => d.StringSetAsync(
-                It.IsAny<RedisKey>(),
-                It.IsAny<RedisValue>(),
-                It.IsAny<TimeSpan?>(),
-                It.IsAny<bool>(),
-                When.NotExists,
-                It.IsAny<CommandFlags>()))
-            .ReturnsAsync(true);
-
-        mockDb
-            .Setup(d => d.StringIncrementAsync(It.IsAny<RedisKey>(), It.IsAny<long>(), It.IsAny<CommandFlags>()))
+        mock
+            .Setup(c => c.IncrementTotalAsync(It.IsAny<int>(), It.IsAny<long>()))
             .ReturnsAsync(() => incrementCounter());
 
-        mockDb
-            .Setup(d => d.KeyDeleteAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync(true);
+        mock
+            .Setup(c => c.IncrementPeriodicAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<long>()))
+            .ReturnsAsync(() => incrementCounter());
 
-        var mockMux = new Mock<IConnectionMultiplexer>();
-        mockMux.Setup(m => m.GetDatabase(It.IsAny<int>(), It.IsAny<object?>())).Returns(mockDb.Object);
+        mock
+            .Setup(c => c.DeleteAsync(It.IsAny<int>()))
+            .Returns(Task.CompletedTask);
 
-        return (mockDb, mockMux);
+        return mock;
     }
 
-    private static QuotaCheckService CreateService(IConnectionMultiplexer redis, DomainListsContext ctx)
+    private static QuotaCheckService CreateService(IQuotaCounter counter, DomainListsContext ctx)
     {
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["QuotaSettings:SyncEveryNRequests"] = "1"
-            })
-            .Build();
-
         var domainCacheMock = new Mock<IDomainCacheService>();
         domainCacheMock
             .Setup(s => s.InvalidateDomainAsync(It.IsAny<string>()))
@@ -79,10 +60,10 @@ public class QuotaServiceTests
 
         var quotaCacheMock = new Mock<IQuotaCacheService>();
         quotaCacheMock
-            .Setup(s => s.DeleteCounterAsync(It.IsAny<int>()))
+            .Setup(s => s.InvalidateQuotaAsync(It.IsAny<int>()))
             .Returns(Task.CompletedTask);
 
-        return new QuotaCheckService(redis, ctx, config, domainCacheMock.Object, quotaCacheMock.Object,
+        return new QuotaCheckService(counter, ctx, domainCacheMock.Object, quotaCacheMock.Object,
             NullLogger<QuotaCheckService>.Instance);
     }
 
@@ -119,7 +100,7 @@ public class QuotaServiceTests
         await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        var (_, mockMux) = CreateRedisMocks(() => 6);
+        var counterMock = CreateQuotaCounterMock(() => 6);
 
         var quota = new Quota
         {
@@ -134,7 +115,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
         var result = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
 
         Assert.Equal(QuotaCheckResult.Exceeded, result);
@@ -154,7 +135,7 @@ public class QuotaServiceTests
         await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        var (_, mockMux) = CreateRedisMocks(() => 3);
+        var counterMock = CreateQuotaCounterMock(() => 3);
 
         var quota = new Quota
         {
@@ -169,7 +150,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
         var result = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
 
         Assert.Equal(QuotaCheckResult.Allowed, result);
@@ -187,7 +168,7 @@ public class QuotaServiceTests
         await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        var (_, mockMux) = CreateRedisMocks(() => 6);
+        var counterMock = CreateQuotaCounterMock(() => 6);
 
         var quota = new Quota
         {
@@ -204,7 +185,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
         var result = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
 
         Assert.Equal(QuotaCheckResult.TemporarilyExceeded, result);
@@ -225,7 +206,7 @@ public class QuotaServiceTests
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
         var callCount = 0;
-        var (mockDb, mockMux) = CreateRedisMocks(() => ++callCount);
+        var counterMock = CreateQuotaCounterMock(() => ++callCount);
 
         var quota = new Quota
         {
@@ -242,18 +223,13 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
         var result = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
 
         Assert.Equal(QuotaCheckResult.Allowed, result);
 
-        mockDb.Verify(d => d.KeyDeleteAsync(
-            It.Is<RedisKey>(k => k.ToString().Contains(domain.Id.ToString())),
-            It.IsAny<CommandFlags>()), Times.Once);
-
-        var updatedQuota = await ctx.Quotas.AsNoTracking()
-            .FirstAsync(q => q.Id == quota.Id, TestContext.Current.CancellationToken);
-        Assert.Equal(1, updatedQuota.RequestCount);
+        // БД больше не обновляется синхронно — проверяем, что политика вызвала инкремент
+        counterMock.Verify(c => c.IncrementPeriodicAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<long>()), Times.Once);
     }
 
     /// <summary>
@@ -267,7 +243,7 @@ public class QuotaServiceTests
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
         var counter = 0L;
-        var (mockDb, mockMux) = CreateRedisMocks(() => ++counter);
+        var counterMock = CreateQuotaCounterMock(() => ++counter);
 
         var quota = new Quota
         {
@@ -284,7 +260,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
 
         // Первые 3 запроса — разрешены
         for (var i = 0; i < 3; i++)
@@ -304,10 +280,6 @@ public class QuotaServiceTests
         counter = 0;
         var afterReset = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
         Assert.Equal(QuotaCheckResult.Allowed, afterReset);
-
-        mockDb.Verify(d => d.KeyDeleteAsync(
-            It.Is<RedisKey>(k => k.ToString().Contains(domain.Id.ToString())),
-            It.IsAny<CommandFlags>()), Times.Once);
     }
 
     // ── Unlimited ─────────────────────────────────────────────────────────────
@@ -322,7 +294,7 @@ public class QuotaServiceTests
         await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        var (_, mockMux) = CreateRedisMocks(() => 999999);
+        var counterMock = CreateQuotaCounterMock(() => 999999);
 
         var quota = new Quota
         {
@@ -336,7 +308,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
         var result = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
 
         Assert.Equal(QuotaCheckResult.Allowed, result);
@@ -354,9 +326,9 @@ public class QuotaServiceTests
         await using var _ = connection;
         AddAllowedDomain(ctx, "noquota.com");
 
-        var (_, mockMux) = CreateRedisMocks(() => 1);
+        var counterMock = CreateQuotaCounterMock(() => 1);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
         var result = await service.CheckAndIncrementAsync("noquota.com", null);
 
         Assert.Equal(QuotaCheckResult.NoQuota, result);
@@ -374,7 +346,7 @@ public class QuotaServiceTests
         await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        var (_, mockMux) = CreateRedisMocks(() => 3);
+        var counterMock = CreateQuotaCounterMock(() => 3);
 
         var quota = new Quota
         {
@@ -390,7 +362,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
         var result = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
 
         Assert.Equal(QuotaCheckResult.Allowed, result);
@@ -406,7 +378,7 @@ public class QuotaServiceTests
         await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        var (_, mockMux) = CreateRedisMocks(() => 6);
+        var counterMock = CreateQuotaCounterMock(() => 6);
 
         var quota = new Quota
         {
@@ -422,7 +394,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
         var result = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
 
         Assert.Equal(QuotaCheckResult.Exceeded, result);
@@ -438,7 +410,7 @@ public class QuotaServiceTests
         await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        var (_, mockMux) = CreateRedisMocks(() => 1);
+        var counterMock = CreateQuotaCounterMock(() => 1);
 
         var quota = new Quota
         {
@@ -454,7 +426,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
         var result = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
 
         Assert.Equal(QuotaCheckResult.Exceeded, result);
@@ -475,7 +447,7 @@ public class QuotaServiceTests
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
         var counter = 0L;
-        var (_, mockMux) = CreateRedisMocks(() => ++counter);
+        var counterMock = CreateQuotaCounterMock(() => ++counter);
 
         var quota = new Quota
         {
@@ -491,7 +463,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
 
         var before = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
         Assert.Equal(QuotaCheckResult.Allowed, before);
@@ -518,7 +490,7 @@ public class QuotaServiceTests
         await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        var (_, mockMux) = CreateRedisMocks(() => 1);
+        var counterMock = CreateQuotaCounterMock(() => 1);
 
         var quota = new Quota
         {
@@ -533,7 +505,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
         var result = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
 
         Assert.Equal(QuotaCheckResult.Allowed, result);
@@ -549,7 +521,7 @@ public class QuotaServiceTests
         await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        var (_, mockMux) = CreateRedisMocks(() => 1);
+        var counterMock = CreateQuotaCounterMock(() => 1);
 
         var quota = new Quota
         {
@@ -564,7 +536,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
         var result = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
 
         Assert.Equal(QuotaCheckResult.Exceeded, result);
@@ -584,7 +556,7 @@ public class QuotaServiceTests
         await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        var (_, mockMux) = CreateRedisMocks(() => 1);
+        var counterMock = CreateQuotaCounterMock(() => 1);
 
         var quota = new Quota
         {
@@ -599,7 +571,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
 
         var before = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
         Assert.Equal(QuotaCheckResult.Allowed, before);
@@ -626,7 +598,7 @@ public class QuotaServiceTests
         await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        var (_, mockMux) = CreateRedisMocks(() => 3);
+        var counterMock = CreateQuotaCounterMock(() => 3);
 
         var quota = new Quota
         {
@@ -644,7 +616,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
         var result = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
 
         Assert.Equal(QuotaCheckResult.Allowed, result);
@@ -660,7 +632,7 @@ public class QuotaServiceTests
         await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        var (_, mockMux) = CreateRedisMocks(() => 6);
+        var counterMock = CreateQuotaCounterMock(() => 6);
 
         var quota = new Quota
         {
@@ -678,7 +650,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
         var result = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
 
         Assert.Equal(QuotaCheckResult.TemporarilyExceeded, result);
@@ -694,7 +666,7 @@ public class QuotaServiceTests
         await using var _ = connection;
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
-        var (_, mockMux) = CreateRedisMocks(() => 1);
+        var counterMock = CreateQuotaCounterMock(() => 1);
 
         var quota = new Quota
         {
@@ -712,7 +684,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
         var result = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
 
         Assert.Equal(QuotaCheckResult.Exceeded, result);
@@ -733,7 +705,7 @@ public class QuotaServiceTests
         var (domain, _) = AddAllowedDomain(ctx, "example.com");
 
         var counter = 0L;
-        var (_, mockMux) = CreateRedisMocks(() => ++counter);
+        var counterMock = CreateQuotaCounterMock(() => ++counter);
 
         var quota = new Quota
         {
@@ -751,7 +723,7 @@ public class QuotaServiceTests
         ctx.Quotas.Add(quota);
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateService(mockMux.Object, ctx);
+        var service = CreateService(counterMock.Object, ctx);
 
         var before = await service.CheckAndIncrementAsync("example.com", ToMeta(quota));
         Assert.Equal(QuotaCheckResult.Allowed, before);

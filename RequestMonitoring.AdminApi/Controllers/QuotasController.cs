@@ -173,7 +173,7 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
             context.Quotas.Add(quota);
             await context.SaveChangesAsync();
 
-            await cacheService.DeleteCounterAsync(quota.DomainId);
+            await cacheService.InvalidateQuotaAsync(quota.DomainId);
 
             return Ok(quota.Adapt<QuotaDto>());
         }
@@ -208,7 +208,7 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
 
             await context.SaveChangesAsync();
 
-            await cacheService.DeleteCounterAsync(quota.DomainId);
+            await cacheService.InvalidateQuotaAsync(quota.DomainId);
 
             return Ok(quota.Adapt<QuotaDto>());
         }
@@ -240,7 +240,7 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
             context.Quotas.Remove(quota);
             await context.SaveChangesAsync();
 
-            await cacheService.DeleteCounterAsync(domainId);
+            await cacheService.InvalidateQuotaAsync(domainId);
 
             return NoContent();
         }
@@ -272,7 +272,7 @@ public class QuotasController(DomainListsContext context, IQuotaCacheService cac
 
             await context.SaveChangesAsync();
 
-            await cacheService.DeleteCounterAsync(quota.DomainId);
+            await cacheService.InvalidateQuotaAsync(quota.DomainId);
 
             return Ok(quota.Adapt<QuotaDto>());
         }

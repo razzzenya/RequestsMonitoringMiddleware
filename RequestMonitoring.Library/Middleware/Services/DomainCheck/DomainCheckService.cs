@@ -33,8 +33,8 @@ public class DomainCheckService(IConfiguration configuration, HybridCache cache,
             cancellationToken: context.RequestAborted
         );
 
-        if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("Domain {Domain} status: {Status}", LogSanitizer.Sanitize(domain), entry.Status);
+        if (logger.IsEnabled(LogLevel.Debug))
+            logger.LogDebug("Domain {Domain} status: {Status}", LogSanitizer.Sanitize(domain), entry.Status);
         return entry;
     }
 
@@ -64,6 +64,5 @@ public class DomainCheckService(IConfiguration configuration, HybridCache cache,
 
         return new DomainCacheEntry(status, quotaMeta);
     }
-
 
 }

@@ -14,7 +14,6 @@ using RequestMonitoring.Library.Middleware.Services.DomainCheck;
 using RequestMonitoring.Library.Middleware.Services.QuotaCache;
 using RequestMonitoring.Library.Middleware.Services.QuotaCheck;
 using RequestMonitoring.Library.Shared;
-using StackExchange.Redis;
 using System.Data.Common;
 
 namespace RequestMonitoring.Tests;
@@ -123,24 +122,19 @@ public class CacheTests
         return quota;
     }
 
-    private static (Mock<IDatabase> MockDb, Mock<IConnectionMultiplexer> MockRedis) CreateRedisMocks(long counterValue = 1)
+    private static Mock<IQuotaCounter> CreateQuotaCounterMock(long counterValue = 1)
     {
-        var mockDb = new Mock<IDatabase>();
-        mockDb
-            .Setup(d => d.StringSetAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(),
-                It.IsAny<TimeSpan?>(), It.IsAny<bool>(), When.NotExists, It.IsAny<CommandFlags>()))
-            .ReturnsAsync(true);
-        mockDb
-            .Setup(d => d.StringIncrementAsync(It.IsAny<RedisKey>(), It.IsAny<long>(), It.IsAny<CommandFlags>()))
+        var mock = new Mock<IQuotaCounter>();
+        mock
+            .Setup(c => c.IncrementTotalAsync(It.IsAny<int>(), It.IsAny<long>()))
             .ReturnsAsync(counterValue);
-        mockDb
-            .Setup(d => d.KeyDeleteAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
-            .ReturnsAsync(true);
-
-        var mockMux = new Mock<IConnectionMultiplexer>();
-        mockMux.Setup(m => m.GetDatabase(It.IsAny<int>(), It.IsAny<object?>())).Returns(mockDb.Object);
-
-        return (mockDb, mockMux);
+        mock
+            .Setup(c => c.IncrementPeriodicAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<long>()))
+            .ReturnsAsync(counterValue);
+        mock
+            .Setup(c => c.DeleteAsync(It.IsAny<int>()))
+            .Returns(Task.CompletedTask);
+        return mock;
     }
 
     // ── DomainCheckService cache tests ────────────────────────────────────────
@@ -247,14 +241,14 @@ public class CacheTests
         var domain = AddDomain(ctx, "quota-exceed.com");
         AddQuota(ctx, domain, maxRequests: 5);
 
-        var (_, mockMux) = CreateRedisMocks(counterValue: 6); // сразу превышает лимит
+        var counterMock = CreateQuotaCounterMock(counterValue: 6); // сразу превышает лимит
 
         var domainCacheMock = new Mock<IDomainCacheService>();
         domainCacheMock.Setup(s => s.InvalidateDomainAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
         var quotaCacheMock = new Mock<IQuotaCacheService>();
-        quotaCacheMock.Setup(s => s.DeleteCounterAsync(It.IsAny<int>())).Returns(Task.CompletedTask);
+        quotaCacheMock.Setup(s => s.InvalidateQuotaAsync(It.IsAny<int>())).Returns(Task.CompletedTask);
 
-        var service = new QuotaCheckService(mockMux.Object, ctx, CreateConfig(), domainCacheMock.Object,
+        var service = new QuotaCheckService(counterMock.Object, ctx, domainCacheMock.Object,
             quotaCacheMock.Object, NullLogger<QuotaCheckService>.Instance);
 
         var quotaMeta = new QuotaMetaDto(1, domain.Id, QuotaType.Total, 5, null, null);
@@ -264,7 +258,7 @@ public class CacheTests
 
         // При превышении квоты оба кэша должны быть инвалидированы
         domainCacheMock.Verify(s => s.InvalidateDomainAsync("quota-exceed.com"), Times.Once);
-        quotaCacheMock.Verify(s => s.DeleteCounterAsync(domain.Id), Times.Once);
+        quotaCacheMock.Verify(s => s.InvalidateQuotaAsync(domain.Id), Times.Once);
     }
 
     /// <summary>
@@ -290,11 +284,11 @@ public class CacheTests
         });
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var (_, mockMux) = CreateRedisMocks(counterValue: 6);
+        var counterMock = CreateQuotaCounterMock(counterValue: 6);
         var domainCacheMock = new Mock<IDomainCacheService>();
         var quotaCacheMock = new Mock<IQuotaCacheService>();
 
-        var service = new QuotaCheckService(mockMux.Object, ctx, CreateConfig(), domainCacheMock.Object,
+        var service = new QuotaCheckService(counterMock.Object, ctx, domainCacheMock.Object,
             quotaCacheMock.Object, NullLogger<QuotaCheckService>.Instance);
 
         var quotaMeta = new QuotaMetaDto(1, domain.Id, QuotaType.Periodic, 5, 3600, null);
@@ -304,6 +298,6 @@ public class CacheTests
 
         // При временном превышении кэш НЕ инвалидируется — домен остаётся Allowed
         domainCacheMock.Verify(s => s.InvalidateDomainAsync(It.IsAny<string>()), Times.Never);
-        quotaCacheMock.Verify(s => s.DeleteCounterAsync(It.IsAny<int>()), Times.Never);
+        quotaCacheMock.Verify(s => s.InvalidateQuotaAsync(It.IsAny<int>()), Times.Never);
     }
 }
