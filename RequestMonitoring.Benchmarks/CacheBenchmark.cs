@@ -1,13 +1,13 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Containers;
 using Testcontainers.Redis;
 
 namespace RequestMonitoring.Benchmarks;
@@ -28,7 +28,7 @@ public class CacheBenchmark
         AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
     };
 
-    private IMemoryCache _memoryCache = null!;
+    private MemoryCache _memoryCache = null!;
     private IDistributedCache _redisCache = null!;
     private IDistributedCache _valkeyCache = null!;
     private IDistributedCache _garnetCache = null!;
@@ -141,7 +141,7 @@ public class CacheBenchmark
             Expiration = TimeSpan.FromMinutes(10)
         });
 
-    private static IDistributedCache BuildRedisCache(string connectionString)
+    private static RedisCache BuildRedisCache(string connectionString)
     {
         var options = Options.Create(new RedisCacheOptions { Configuration = connectionString });
         return new RedisCache(options);

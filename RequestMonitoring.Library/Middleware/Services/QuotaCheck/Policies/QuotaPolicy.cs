@@ -1,8 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites;
 using RequestMonitoring.Library.Shared;
-using StackExchange.Redis;
 
 namespace RequestMonitoring.Library.Middleware.Services.QuotaCheck.Policies;
 
@@ -11,49 +8,30 @@ namespace RequestMonitoring.Library.Middleware.Services.QuotaCheck.Policies;
 /// </summary>
 public abstract class QuotaPolicy
 {
+    private static readonly QuotaPolicy[] Policies =
+    [
+        new UnlimitedQuotaPolicy(),
+        new PeriodicQuotaPolicy(),
+        new TotalQuotaPolicy(),
+        new ExpiringUnlimitedQuotaPolicy(),
+        new ExpiringTotalQuotaPolicy(),
+        new ExpiringPeriodicQuotaPolicy()
+    ];
+
     /// <summary>
     /// Инкрементирует счётчик и проверяет квоту
     /// </summary>
-    public abstract Task<QuotaCheckResult> ExecuteAsync(Quota quota, IDatabase db, DomainListsContext dbContext, int syncEveryNRequests);
+    public abstract Task<QuotaCheckResult> ExecuteAsync(Quota quota, IQuotaCounter counter);
 
     /// <summary>
-    /// Создаёт политику по типу квоты
+    /// Создаёт политику по типу квоты (возвращает закэшированный singleton-экземпляр)
     /// </summary>
-    public static QuotaPolicy Create(QuotaType type) => type switch
+    public static QuotaPolicy Create(QuotaType type)
     {
-        QuotaType.Unlimited         => new UnlimitedQuotaPolicy(),
-        QuotaType.Periodic          => new PeriodicQuotaPolicy(),
-        QuotaType.Total             => new TotalQuotaPolicy(),
-        QuotaType.ExpiringUnlimited => new ExpiringUnlimitedQuotaPolicy(),
-        QuotaType.ExpiringTotal     => new ExpiringTotalQuotaPolicy(),
-        QuotaType.ExpiringPeriodic  => new ExpiringPeriodicQuotaPolicy(),
-        _ => throw new ArgumentOutOfRangeException(nameof(type), $"Unknown quota type: {type}")
-    };
+        var index = (int)type;
+        if (index < 0 || index >= Policies.Length)
+            throw new ArgumentOutOfRangeException(nameof(type), $"Unknown quota type: {type}");
 
-    protected static string GetCacheKey(Quota quota) => $"Quota_{quota.DomainId}";
-
-    protected static async Task<long> IncrementInRedisAsync(Quota quota, IDatabase db)
-    {
-        var cacheKey = GetCacheKey(quota);
-
-        // Seed the key from DB if it doesn't exist (e.g. after Redis restart)
-        await db.StringSetAsync(cacheKey, quota.RequestCount, when: When.NotExists);
-
-        return await db.StringIncrementAsync(cacheKey);
-    }
-
-    protected static async Task DeleteCacheKeyAsync(Quota quota, IDatabase db)
-    {
-        await db.KeyDeleteAsync(GetCacheKey(quota));
-    }
-
-    protected static async Task SaveCounterAsync(Quota quota, DomainListsContext dbContext, long count, int syncEveryNRequests)
-    {
-        if (count % syncEveryNRequests == 0)
-        {
-            await dbContext.Quotas
-                .Where(q => q.Id == quota.Id)
-                .ExecuteUpdateAsync(s => s.SetProperty(q => q.RequestCount, count));
-        }
+        return Policies[index];
     }
 }

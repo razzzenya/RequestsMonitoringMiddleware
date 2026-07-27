@@ -45,6 +45,31 @@ namespace RequestMonitoring.Library.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "quota",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    domain_id = table.Column<int>(type: "INTEGER", nullable: false),
+                    type = table.Column<int>(type: "INTEGER", nullable: false),
+                    max_requests = table.Column<int>(type: "INTEGER", nullable: true),
+                    period_seconds = table.Column<int>(type: "INTEGER", nullable: true),
+                    expires_at = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    request_count = table.Column<long>(type: "INTEGER", nullable: false),
+                    last_reset_at = table.Column<DateTime>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_quota", x => x.id);
+                    table.ForeignKey(
+                        name: "FK_quota_domain_domain_id",
+                        column: x => x.domain_id,
+                        principalTable: "domain",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.InsertData(
                 table: "DomainStatusTypes",
                 columns: new[] { "id", "name" },
@@ -52,18 +77,33 @@ namespace RequestMonitoring.Library.Migrations
                 {
                     { 1, "Allowed" },
                     { 2, "Greylisted" },
-                    { 3, "Unauthorized" }
+                    { 3, "Forbidden" }
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_domain_host",
+                table: "domain",
+                column: "host",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_domain_status_id",
                 table: "domain",
                 column: "status_id");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_quota_domain_id",
+                table: "quota",
+                column: "domain_id",
+                unique: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "quota");
+
             migrationBuilder.DropTable(
                 name: "domain");
 

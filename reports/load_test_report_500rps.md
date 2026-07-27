@@ -1,0 +1,118 @@
+> test info
+
+
+
+test suite: `nbomber_default_test_suite_name`
+
+test name: `nbomber_default_test_name`
+
+session id: `2026-07-18_16-44-39_875e8eda`
+
+> scenario stats
+
+
+
+scenario: `allowed_500rps`
+
+  - ok count: `30000`
+
+  - fail count: `0`
+
+  - all data: `7.639` MB
+
+  - duration: `00:01:00`
+
+load simulations:
+
+  - `inject`, rate: `500`, interval: `00:00:01`, during: `00:01:00`
+
+|step|ok stats|
+|---|---|
+|name|`global information`|
+|request count|all = `30000`, ok = `30000`, RPS = `500`|
+|latency (ms)|min = `0.43`, mean = `1.99`, max = `39.03`, StdDev = `1.71`|
+|latency percentile (ms)|p50 = `1.5`, p75 = `1.94`, p95 = `5.23`, p99 = `8.68`|
+|data transfer (KB)|min = `0.259`, mean = `0.261`, max = `0.263`, all = `7.639` MB|
+
+
+> status codes for scenario: `allowed_500rps`
+
+
+
+|status code|count|message|
+|---|---|---|
+|OK|30000||
+
+
+> scenario stats
+
+
+
+scenario: `greylisted_500rps`
+
+  - ok count: `30000`
+
+  - fail count: `0`
+
+  - all data: `7.539` MB
+
+  - duration: `00:01:00`
+
+load simulations:
+
+  - `inject`, rate: `500`, interval: `00:00:01`, during: `00:01:00`
+
+|step|ok stats|
+|---|---|
+|name|`global information`|
+|request count|all = `30000`, ok = `30000`, RPS = `500`|
+|latency (ms)|min = `0.32`, mean = `1.93`, max = `26.29`, StdDev = `1.46`|
+|latency percentile (ms)|p50 = `1.56`, p75 = `2.02`, p95 = `4.82`, p99 = `7.54`|
+|data transfer (KB)|min = `0.257`, mean = `0.257`, max = `0.258`, all = `7.539` MB|
+
+
+> status codes for scenario: `greylisted_500rps`
+
+
+
+|status code|count|message|
+|---|---|---|
+|PaymentRequired|30000||
+
+
+> scenario stats
+
+
+
+scenario: `unknown_500rps`
+
+  - ok count: `30000`
+
+  - fail count: `0`
+
+  - all data: `7.253` MB
+
+  - duration: `00:01:00`
+
+load simulations:
+
+  - `inject`, rate: `500`, interval: `00:00:01`, during: `00:01:00`
+
+|step|ok stats|
+|---|---|
+|name|`global information`|
+|request count|all = `30000`, ok = `30000`, RPS = `500`|
+|latency (ms)|min = `0.32`, mean = `1.92`, max = `26.36`, StdDev = `1.46`|
+|latency percentile (ms)|p50 = `1.55`, p75 = `2`, p95 = `4.81`, p99 = `7.33`|
+|data transfer (KB)|min = `0.247`, mean = `0.247`, max = `0.248`, all = `7.253` MB|
+
+
+> status codes for scenario: `unknown_500rps`
+
+
+
+|status code|count|message|
+|---|---|---|
+|Forbidden|30000||
+
+

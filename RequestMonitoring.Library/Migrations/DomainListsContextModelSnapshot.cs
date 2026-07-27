@@ -15,7 +15,7 @@ namespace RequestMonitoring.Library.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.7");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
 
             modelBuilder.Entity("RequestMonitoring.Library.Enitites.Domain", b =>
                 {
@@ -74,7 +74,7 @@ namespace RequestMonitoring.Library.Migrations
                         new
                         {
                             Id = 3,
-                            Name = "Unauthorized"
+                            Name = "Forbidden"
                         });
                 });
 

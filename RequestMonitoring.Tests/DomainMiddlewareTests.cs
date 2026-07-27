@@ -26,7 +26,7 @@ public class DomainMiddlewareTests
         {
             ("allowed.com", HttpStatusCode.OK),
             ("greylisted.com", HttpStatusCode.PaymentRequired),
-            ("unknown.example.com", HttpStatusCode.Unauthorized),
+            ("unknown.example.com", HttpStatusCode.Forbidden),
         };
 
         var tasks = domains.Select(async domainInfo =>

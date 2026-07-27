@@ -1,6 +1,4 @@
-using RequestMonitoring.Library.Context;
 using RequestMonitoring.Library.Enitites;
-using StackExchange.Redis;
 
 namespace RequestMonitoring.Library.Middleware.Services.QuotaCheck.Policies;
 
@@ -9,10 +7,9 @@ namespace RequestMonitoring.Library.Middleware.Services.QuotaCheck.Policies;
 /// </summary>
 public class TotalQuotaPolicy : QuotaPolicy
 {
-    public override async Task<QuotaCheckResult> ExecuteAsync(Quota quota, IDatabase db, DomainListsContext dbContext, int syncEveryNRequests)
+    public override async Task<QuotaCheckResult> ExecuteAsync(Quota quota, IQuotaCounter counter)
     {
-        var count = await IncrementInRedisAsync(quota, db);
-        await SaveCounterAsync(quota, dbContext, count, syncEveryNRequests);
+        var count = await counter.IncrementTotalAsync(quota.DomainId, quota.RequestCount);
 
         return count > quota.MaxRequests!.Value
             ? QuotaCheckResult.Exceeded

@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using RequestMonitoring.Library.Dto;
 using RequestMonitoring.Library.Middleware.Services.DomainCheck;
 using RequestMonitoring.Library.Middleware.Services.QuotaCheck;
+using RequestMonitoring.Library.Shared;
 using System.Diagnostics;
 
 namespace RequestMonitoring.Library.Middleware;
@@ -16,58 +18,63 @@ public class RequestMonitoringMiddleware(RequestDelegate next, ILogger<RequestMo
     /// <summary>
     /// Проверяет статус домена и разрешает или блокирует запрос
     /// </summary>
-    public async Task InvokeAsync(HttpContext context, IDomainCheckService domainCheckService, IQuotaService quotaService)
+    public async Task InvokeAsync(HttpContext context, IDomainCheckService domainCheckService, IQuotaCheckService quotaService)
     {
         using var activity = ActivitySource.StartActivity("DomainCheck", ActivityKind.Server);
 
         var domain = context.Request.Headers["X-Test-Host"].FirstOrDefault() ?? context.Request.Host.Host;
-        activity?.SetTag("domain.name", domain);
 
-        logger.LogInformation("Checking domain access for {Domain}", domain);
+        logger.LogDebug("Checking domain access for {Domain}", LogSanitizer.Sanitize(domain));
 
-        var domainStatus = await domainCheckService.IsDomainAllowedAsync(context);
+        var entry = await domainCheckService.IsDomainAllowedAsync(context);
 
-        activity?.SetTag("domain.status", domainStatus.Name);
-        activity?.SetTag("domain.status.id", domainStatus.Id);
-
-        switch (domainStatus.Id)
+        switch (entry.Status)
         {
-            case 1:
-                var quotaResult = await quotaService.CheckAndIncrementAsync(domain);
-                activity?.SetTag("domain.quota", quotaResult.ToString());
+            case DomainStatus.Allowed:
+                var quotaResult = await quotaService.CheckAndIncrementAsync(domain, entry.Quota);
+
+                if (quotaResult == QuotaCheckResult.NoQuota)
+                {
+                    logger.LogWarning("Domain {Domain} has no quota configured - denying access", LogSanitizer.Sanitize(domain));
+                    activity?.SetStatus(ActivityStatusCode.Error, "No quota configured");
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    await context.Response.WriteAsync("Access denied: domain has no quota configured.");
+                    return;
+                }
 
                 if (quotaResult == QuotaCheckResult.Exceeded)
                 {
-                    logger.LogWarning("Domain {Domain} quota exceeded, domain moved to Greylisted", domain);
+                    logger.LogWarning("Domain {Domain} quota exceeded, domain moved to Greylisted", LogSanitizer.Sanitize(domain));
                     activity?.SetStatus(ActivityStatusCode.Error, "Quota exceeded");
                     context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
                     await context.Response.WriteAsync("Quota exceeded. This domain has been greylisted.");
                     return;
                 }
-                else if (quotaResult == QuotaCheckResult.TemporarilyExceeded)
+
+                if (quotaResult == QuotaCheckResult.TemporarilyExceeded)
                 {
-                    logger.LogWarning("Domain {Domain} periodic quota temporarily exceeded", domain);
+                    logger.LogWarning("Domain {Domain} periodic quota temporarily exceeded", LogSanitizer.Sanitize(domain));
                     activity?.SetStatus(ActivityStatusCode.Error, "Periodic quota exceeded");
                     context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
                     await context.Response.WriteAsync("Too many requests. Quota will reset at the end of the current period.");
                     return;
                 }
 
-                logger.LogInformation("Domain {Domain} is whitelisted - allowing access", domain);
+                logger.LogDebug("Domain {Domain} is whitelisted - allowing access", LogSanitizer.Sanitize(domain));
                 await next(context);
                 return;
 
-            case 2:
-                logger.LogWarning("Domain {Domain} is greylisted - payment required", domain);
+            case DomainStatus.Greylisted:
+                logger.LogWarning("Domain {Domain} is greylisted - payment required", LogSanitizer.Sanitize(domain));
                 activity?.SetStatus(ActivityStatusCode.Error, "Domain greylisted");
                 context.Response.StatusCode = StatusCodes.Status402PaymentRequired;
                 await context.Response.WriteAsync("This domain is greylisted.");
                 return;
 
-            case 3:
-                logger.LogWarning("Domain {Domain} is unknown", domain);
+            case DomainStatus.Forbidden:
+                logger.LogWarning("Domain {Domain} is unknown", LogSanitizer.Sanitize(domain));
                 activity?.SetStatus(ActivityStatusCode.Error, "Unknown Domain");
-                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 await context.Response.WriteAsync("This domain is forbidden.");
                 return;
         }

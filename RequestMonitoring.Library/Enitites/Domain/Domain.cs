@@ -34,4 +34,6 @@ public class Domain
     [Column("status_id")]
     [Required]
     public required int DomainStatusTypeId { get; set; }
+
+    public Quota? Quota { get; set; }
 }
